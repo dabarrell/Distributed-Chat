@@ -8,6 +8,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.pmw.tinylog.Configurator;
 import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 
 import javax.naming.ConfigurationException;
@@ -17,6 +18,10 @@ import java.util.List;
 
 public class Main {
 
+    /**
+     * Where all the magic happens
+     * @param args Arguments
+     */
     public static void main(String[] args) {
         ArgumentParser parser = configureArgumentParser();
 
@@ -40,8 +45,14 @@ public class Main {
             Logger.error(ex.getMessage());
             System.exit(1);
         }
+
+        Logger.info("Chat server now available");
     }
 
+    /**
+     * Configures an argument parser
+     * @return The configured argument parser
+     */
     private static ArgumentParser configureArgumentParser() {
         ArgumentParser parser = ArgumentParsers.newArgumentParser("ChatServer")
                 .defaultHelp(true)
@@ -94,6 +105,7 @@ public class Main {
      */
     private static void processServers(List<String> configurationLines) throws Exception {
         Logger.debug("Beginning config processing");
+        int localPort = 0;
 
         for (String currentLine: configurationLines) {
             Logger.debug("Adding config: {}", currentLine);
@@ -108,7 +120,10 @@ public class Main {
             CoordinationServer currentServer = new CoordinationServer(serverName,
                     serverAddress,
                     coordinationPort,
-                    clientPort, isLocalServer);
+                    clientPort,
+                    isLocalServer);
+
+            localPort += isLocalServer ? clientPort : 0;
 
             // Add our found coordination server
             StateManager.getInstance().addServer(currentServer);
@@ -116,12 +131,17 @@ public class Main {
         Logger.debug("Config loaded, validating connectivity");
 
         validateConnectivity();
+        new ClientListener(localPort);
 
-        Logger.info("All servers reached. Chat service now available");
+        Logger.debug("All servers reached. Chat service now available");
 
         Logger.debug("Finished config processing");
     }
 
+    /**
+     * Validates connectivity to other configured servers
+     * @throws InterruptedException If the thread checking connectivity is interrupted
+     */
     private static void validateConnectivity() throws InterruptedException {
         // Wait one second for servers to start up
         Thread.sleep(1000);

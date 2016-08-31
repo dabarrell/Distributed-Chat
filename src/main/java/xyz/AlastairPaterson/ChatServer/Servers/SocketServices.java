@@ -6,10 +6,16 @@ import java.io.*;
 import java.net.Socket;
 
 /**
- * Created by atp on 31/08/2016.
+ * Provides basic services for reading from/writing to sockets
  */
-public class SocketServices {
-    public static void writeToSocket(Socket socket, Object content) throws IOException {
+class SocketServices {
+    /**
+     * Writes an object to a socket
+     * @param socket The destination socket
+     * @param content The item to be written
+     * @throws IOException Thrown if writing fails
+     */
+     static void writeToSocket(Socket socket, Object content) throws IOException {
         BufferedWriter socketWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         Logger.debug("Writing {} to {}", content.toString(), socket.getInetAddress().toString());
 
@@ -18,7 +24,13 @@ public class SocketServices {
         socketWriter.flush();
     }
 
-    public static String readFromSocket(Socket socket) throws IOException {
+    /**
+     * Reads a string from a socket
+     * @param socket The source socket
+     * @return The string that is read
+     * @throws IOException Thrown if reading fails
+     */
+    static String readFromSocket(Socket socket) throws IOException {
         BufferedReader socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String readData = socketReader.readLine();
 

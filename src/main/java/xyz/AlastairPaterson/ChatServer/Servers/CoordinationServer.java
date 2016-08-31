@@ -10,7 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Created by atp on 30/08/2016.
+ * Coordinates client actions between servers
  */
 public class CoordinationServer {
     private boolean connected = false;
@@ -25,6 +25,15 @@ public class CoordinationServer {
 
     private ServerSocket socket;
 
+    /**
+     * Creates a new coordination server
+     * @param id The specified server ID
+     * @param hostname The host name or address
+     * @param coordinationPort The port for coordination operations
+     * @param clientPort The port for client operations
+     * @param localInstance If this is a locally running server
+     * @throws IOException Thrown if initialization fails for some reason
+     */
     public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws IOException {
         this.id = id;
         this.hostname = hostname;
@@ -41,6 +50,7 @@ public class CoordinationServer {
             connected = true;
         }
         else {
+            // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
             workerThread.setName(id + "CoordinationValidator");
         }
@@ -48,20 +58,37 @@ public class CoordinationServer {
         workerThread.start();
     }
 
+    /**
+     * Determines if the server is reachable
+     * @return True if available or local
+     */
     public boolean isConnected() {
         return connected;
     }
 
+    /**
+     * The 'id' of the server
+     * @return The server's id
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Sends a message to the specified coordination server
+     * @param message The message being sent
+     * @return A JSON-encoded string with the result
+     * @throws IOException Thrown if reading or writing fails
+     */
     private String sendMessage(Message message) throws IOException {
         Socket remoteServer = new Socket(this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
     }
 
+    /**
+     * Validates this server is reachable
+     */
     private void validateConnectivity() {
         while(true) {
             try {
@@ -81,6 +108,9 @@ public class CoordinationServer {
         connected = true;
     }
 
+    /**
+     * Runs a local coordination server
+     */
     private void runServer() {
         while(true) {
             try {
@@ -94,6 +124,10 @@ public class CoordinationServer {
         }
     }
 
+    /**
+     * Processes a client connection
+     * @param client The connection received
+     */
     private void processCommand(Socket client) {
         try {
             String receivedData = SocketServices.readFromSocket(client);
@@ -112,6 +146,11 @@ public class CoordinationServer {
         }
     }
 
+    /**
+     * Processes a 'hello' message (out of spec, to validate connectivity)
+     * @param message The hello message received
+     * @return A response hello message
+     */
     private Object processHelloMessage(String message) {
         return new HelloMessage();
     }
