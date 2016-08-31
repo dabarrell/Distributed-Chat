@@ -5,6 +5,7 @@
       <element id="module-output" name="COMP90015-A1" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/code/gson/gson/2.7/gson-2.7.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/sourceforge/argparse4j/argparse4j/0.7.0/argparse4j-0.7.0.jar" path-in-jar="/" />
+      <element id="library" level="project" name="Maven: org.tinylog:tinylog:1.1" />
     </root>
   </artifact>
 </component>
