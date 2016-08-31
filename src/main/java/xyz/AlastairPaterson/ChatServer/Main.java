@@ -123,6 +123,8 @@ public class Main {
     }
 
     private static void validateConnectivity() throws InterruptedException {
+        // Wait one second for servers to start up
+        Thread.sleep(1000);
         while(!StateManager.getInstance().getServers().stream().allMatch(CoordinationServer::isConnected)) {
             StringBuilder sb = new StringBuilder();
             sb.append("Can't reach all servers, waiting three seconds before trying again");

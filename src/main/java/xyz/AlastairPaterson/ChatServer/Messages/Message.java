@@ -9,4 +9,8 @@ public class Message {
     public Message(String type) {
         this.type = type;
     }
+
+    public String getType() {
+        return type;
+    }
 }

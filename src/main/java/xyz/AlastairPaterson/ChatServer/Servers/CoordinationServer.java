@@ -6,6 +6,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
@@ -22,7 +23,9 @@ public class CoordinationServer {
 
     private int clientPort;
 
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) {
+    private ServerSocket socket;
+
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws IOException {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
@@ -30,14 +33,16 @@ public class CoordinationServer {
 
         Thread workerThread;
 
-        if(localInstance && false) {
+        if(localInstance) {
             // Start server
-            workerThread = new Thread();
+            workerThread = new Thread(this::runServer);
+            workerThread.setName(id + "CoordinationListener");
+            socket = new ServerSocket(this.coordinationPort);
             connected = true;
         }
         else {
             workerThread = new Thread(this::validateConnectivity);
-            workerThread.setName(id + "ConnectionValidator");
+            workerThread.setName(id + "CoordinationValidator");
         }
 
         workerThread.start();
@@ -74,5 +79,40 @@ public class CoordinationServer {
         }
         Logger.debug("Validated connectivity to {}", this.id);
         connected = true;
+    }
+
+    private void runServer() {
+        while(true) {
+            try {
+                Socket newConnection = socket.accept();
+
+                //TODO: move to different thread?
+                this.processCommand(newConnection);
+            } catch (IOException e) {
+                Logger.warn("IO exception occurred: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void processCommand(Socket client) {
+        try {
+            String receivedData = SocketServices.readFromSocket(client);
+            Message messageType = new Gson().fromJson(receivedData, Message.class);
+
+            Object replyObject = null;
+            switch(messageType.getType()) {
+                case "hello":
+                    replyObject = processHelloMessage(receivedData);
+                    break;
+            }
+
+            SocketServices.writeToSocket(client, new Gson().toJson(replyObject));
+        } catch (IOException e) {
+            Logger.warn("IO exception occurred: {}", e.getMessage());
+        }
+    }
+
+    private Object processHelloMessage(String message) {
+        return new HelloMessage();
     }
 }
