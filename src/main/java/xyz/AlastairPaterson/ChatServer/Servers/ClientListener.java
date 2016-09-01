@@ -87,7 +87,16 @@ public class ClientListener {
                 break;
             }
         }
-        StateManager.getInstance().getHostedIdentities().add(new Identity(request.getIdentity()));
+
+        if (idRequestApproved) {
+            StateManager.getInstance().getHostedIdentities().add(new Identity(request.getIdentity()));
+        }
+
+        IdentityUnlockMessage unlockMessage = new IdentityUnlockMessage(request.getIdentity());
+
+        for(CoordinationServer s: StateManager.getInstance().getServers()) {
+            s.sendMessage(unlockMessage);
+        }
 
         return new NewIdentityClientResponse(idRequestApproved);
     }
