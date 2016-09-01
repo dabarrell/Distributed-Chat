@@ -150,7 +150,7 @@ public class CoordinationServer {
                     replyObject = processIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityCoordinationMessage.class));
                     break;
                 case "releaseidentity":
-                    replyObject = processUnlockIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityUnlockMessage.class));
+                    processUnlockIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityUnlockMessage.class));
                     break;
             }
 
@@ -163,14 +163,11 @@ public class CoordinationServer {
     /**
      * Processes a releaseidentity message
      * @param identityUnlockMessage The received message
-     * @return Null (no response is required)
      */
-    private Object processUnlockIdentityRequest(IdentityUnlockMessage identityUnlockMessage) {
+    private void processUnlockIdentityRequest(IdentityUnlockMessage identityUnlockMessage) {
         StateManager.getInstance().removeLock(new EntityLock(identityUnlockMessage.getIdentity(),
-                identityUnlockMessage.getServerid(),
+                identityUnlockMessage.getServerId(),
                 LockType.IdentityLock));
-
-        return null;
     }
 
     /**
