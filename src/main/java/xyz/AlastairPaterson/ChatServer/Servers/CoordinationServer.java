@@ -2,8 +2,15 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
+import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
+import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
+import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -24,6 +31,8 @@ public class CoordinationServer {
     private int clientPort;
 
     private ServerSocket socket;
+
+    private final Gson jsonSerializer = new Gson();
 
     /**
      * Creates a new coordination server
@@ -80,7 +89,7 @@ public class CoordinationServer {
      * @return A JSON-encoded string with the result
      * @throws IOException Thrown if reading or writing fails
      */
-    private String sendMessage(Message message) throws IOException {
+    protected String sendMessage(Message message) throws IOException {
         Socket remoteServer = new Socket(this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
@@ -136,7 +145,13 @@ public class CoordinationServer {
             Object replyObject = null;
             switch(messageType.getType()) {
                 case "hello":
-                    replyObject = processHelloMessage(receivedData);
+                    replyObject = processHelloMessage();
+                    break;
+                case "lockidentity":
+                    replyObject = processIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityCoordinationMessage.class));
+                    break;
+                case "releaseidentity":
+                    replyObject = processUnlockIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityUnlockMessage.class));
                     break;
             }
 
@@ -147,11 +162,46 @@ public class CoordinationServer {
     }
 
     /**
+     * Processes a releaseidentity message
+     * @param identityUnlockMessage The received message
+     * @return Null (no response is required)
+     */
+    private Object processUnlockIdentityRequest(IdentityUnlockMessage identityUnlockMessage) {
+        StateManager.getInstance().removeLock(new EntityLock(identityUnlockMessage.getIdentity(),
+                identityUnlockMessage.getServerid(),
+                LockType.IdentityLock));
+
+        return null;
+    }
+
+    /**
+     * Process a lockidentity request
+     * @param identityCoordinationMessage The message received from the coordination server
+     * @return A reply to send to the origin server
+     */
+    private IdentityCoordinationMessage processIdentityRequest(IdentityCoordinationMessage identityCoordinationMessage) {
+        boolean approved;
+        try {
+            StateManager.getInstance().validateIdentityOk(identityCoordinationMessage.getIdentity());
+            approved = true;
+        } catch (IdentityInUseException e) {
+            approved = false;
+        }
+
+        StateManager.getInstance().addLock(identityCoordinationMessage.getIdentity(),
+                identityCoordinationMessage.getServerid(),
+                LockType.IdentityLock);
+
+        return new IdentityCoordinationMessage(StateManager.getInstance().getThisServerId(),
+                identityCoordinationMessage.getIdentity(),
+                approved);
+    }
+
+    /**
      * Processes a 'hello' message (out of spec, to validate connectivity)
-     * @param message The hello message received
      * @return A response hello message
      */
-    private Object processHelloMessage(String message) {
+    private Object processHelloMessage() {
         return new HelloMessage();
     }
 }

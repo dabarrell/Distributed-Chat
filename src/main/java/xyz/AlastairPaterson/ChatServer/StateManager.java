@@ -1,7 +1,9 @@
 package xyz.AlastairPaterson.ChatServer;
 
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
+import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
+import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 
@@ -27,6 +29,8 @@ public class StateManager {
 
     private final List<Identity> hostedIdentities = new LinkedList<>();
 
+    private final List<EntityLock> lockedEntities = new LinkedList<>();
+
     private final List<CoordinationServer> servers = new LinkedList<>();
 
     private String thisServerId;
@@ -41,6 +45,25 @@ public class StateManager {
      */
     public void addServer(CoordinationServer server) {
         this.servers.add(server);
+    }
+
+    /**
+     * Adds a lock to the StateManager
+     * @param identity The identity being locked
+     * @param type The type of entity being locked
+     */
+    public void addLock(String identity, String serverName, LockType type) {
+        this.lockedEntities.add(new EntityLock(identity, serverName, type));
+    }
+
+    /* Removers */
+
+    /**
+     * Removes a lock
+     * @param lock The lock to remove
+     */
+    public void removeLock(EntityLock lock) {
+        this.lockedEntities.removeIf(x -> x.equals(lock));
     }
 
     /* Getters */
@@ -59,6 +82,14 @@ public class StateManager {
      */
     public List<Identity> getHostedIdentities() {
         return hostedIdentities;
+    }
+
+    /**
+     * Gets the identities entities on this server
+     * @return A list of EntityLock objects
+     */
+    public List<EntityLock> getLockedEntities() {
+        return lockedEntities;
     }
 
     /**
@@ -96,6 +127,9 @@ public class StateManager {
      */
     public void validateIdentityOk(String name) throws IdentityInUseException {
         if (hostedIdentities.stream().anyMatch(x -> x.getScreenName().equalsIgnoreCase(name))) {
+            throw new IdentityInUseException(name);
+        }
+        if (lockedEntities.stream().anyMatch(x -> x.isLocked(name, LockType.IdentityLock))) {
             throw new IdentityInUseException(name);
         }
     }
