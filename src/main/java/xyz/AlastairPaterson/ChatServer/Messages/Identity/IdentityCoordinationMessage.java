@@ -63,7 +63,7 @@ public class IdentityCoordinationMessage extends Message {
      * The server ID sending the message
      * @return The server ID
      */
-    public String getServerid() {
+    public String getServerId() {
         return serverid;
     }
 }

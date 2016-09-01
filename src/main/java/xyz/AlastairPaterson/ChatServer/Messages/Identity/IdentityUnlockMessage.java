@@ -7,9 +7,9 @@ import xyz.AlastairPaterson.ChatServer.StateManager;
  * Represents a request to unlock a locked identity
  */
 public class IdentityUnlockMessage extends Message {
-    private String serverid;
+    private final String serverid;
 
-    private String identity;
+    private final String identity;
 
     /**
      * Creates a new identity unlock message
@@ -25,7 +25,7 @@ public class IdentityUnlockMessage extends Message {
      * Gets the requesting server ID
      * @return The requesting server ID
      */
-    public String getServerid() {
+    public String getServerId() {
         return serverid;
     }
 

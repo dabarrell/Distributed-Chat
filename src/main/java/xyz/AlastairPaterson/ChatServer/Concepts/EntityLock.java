@@ -4,11 +4,11 @@ package xyz.AlastairPaterson.ChatServer.Concepts;
  * Represents a lock on a proposed new object
  */
 public class EntityLock {
-    private String identity;
+    private final String identity;
 
-    private String lockingServer;
+    private final String lockingServer;
 
-    private LockType lockType;
+    private final LockType lockType;
 
     /**
      * Creates a new EntityLock

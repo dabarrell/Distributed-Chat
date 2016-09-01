@@ -3,7 +3,6 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
-import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
@@ -22,13 +21,13 @@ import java.net.Socket;
 public class CoordinationServer {
     private boolean connected = false;
 
-    private int coordinationPort;
+    private final int coordinationPort;
 
-    private String hostname;
+    private final String hostname;
 
-    private String id;
+    private final String id;
 
-    private int clientPort;
+    private final int clientPort;
 
     private ServerSocket socket;
 
@@ -189,7 +188,7 @@ public class CoordinationServer {
         }
 
         StateManager.getInstance().addLock(identityCoordinationMessage.getIdentity(),
-                identityCoordinationMessage.getServerid(),
+                identityCoordinationMessage.getServerId(),
                 LockType.IdentityLock);
 
         return new IdentityCoordinationMessage(StateManager.getInstance().getThisServerId(),

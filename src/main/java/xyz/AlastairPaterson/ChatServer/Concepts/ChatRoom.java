@@ -8,7 +8,7 @@ public class ChatRoom {
 
     /**
      * Creates a new chat room with the specified ID
-     * @param roomId
+     * @param roomId The ID of the room
      */
     public ChatRoom(String roomId) {
         this.roomId = roomId;

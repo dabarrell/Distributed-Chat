@@ -15,7 +15,7 @@ import java.util.List;
  * Manages the coordination server's state
  */
 public class StateManager {
-    private static StateManager ourInstance = new StateManager();
+    private static final StateManager ourInstance = new StateManager();
 
     /**
      * Gets the StateManager singleton

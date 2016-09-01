@@ -3,6 +3,7 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 import com.google.gson.Gson;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientRequest;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientResponse;
@@ -14,7 +15,7 @@ import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
- * Created by atp on 30/08/2016.
+ * Listens to and processes client requests
  */
 public class ClientListener {
     private ServerSocket listener;
@@ -52,7 +53,7 @@ public class ClientListener {
                 String clientRequest = SocketServices.readFromSocket(connection);
                 Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
 
-                Object response = null;
+                Object response;
 
                 switch (clientMessage.getType()) {
                     case "newidentity":

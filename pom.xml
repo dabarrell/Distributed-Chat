@@ -82,7 +82,7 @@
         </plugins>
     </build>
     <dependencies>
-        <!--  Gson: Java to Json conversion -->
+        <!--  GSON: Java to Json conversion -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
