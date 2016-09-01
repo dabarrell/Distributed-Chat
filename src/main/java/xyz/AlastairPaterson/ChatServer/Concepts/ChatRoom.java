@@ -9,14 +9,17 @@ import java.util.List;
 public class ChatRoom {
     private String roomId;
 
+    private String ownerId;
+
     private final List<Identity> members = new ArrayList<>();
 
     /**
      * Creates a new chat room with the specified ID
      * @param roomId The ID of the room
      */
-    public ChatRoom(String roomId) {
+    public ChatRoom(String roomId, String ownerId) {
         this.roomId = roomId;
+        this.ownerId = ownerId;
     }
 
     /**
@@ -25,6 +28,14 @@ public class ChatRoom {
      */
     public String getRoomId() {
         return roomId;
+    }
+
+    /**
+     * Gets the owner ID
+     * @return The owner ID
+     */
+    public String getOwnerId() {
+        return ownerId;
     }
 
     /**

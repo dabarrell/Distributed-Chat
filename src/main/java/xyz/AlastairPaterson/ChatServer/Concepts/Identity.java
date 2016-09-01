@@ -5,13 +5,16 @@ package xyz.AlastairPaterson.ChatServer.Concepts;
  */
 public class Identity {
     private String screenName;
+    private ChatRoom currentRoom;
 
     /**
      * Creates a new identity for a user
      * @param screenName The user's screen name
+     * @param currentRoom The current room of the user
      */
-    public Identity(String screenName) {
+    public Identity(String screenName, ChatRoom currentRoom) {
         this.screenName = screenName;
+        this.currentRoom = currentRoom;
     }
 
     /**
@@ -28,5 +31,21 @@ public class Identity {
      */
     public void setScreenName(String screenName) {
         this.screenName = screenName;
+    }
+
+    /**
+     * Gets the user's current room
+     * @return The current room of the user
+     */
+    public ChatRoom getCurrentRoom() {
+        return currentRoom;
+    }
+
+    /**
+     * Sets the user's current room
+     * @param currentRoom The current room of the user
+     */
+    public void setCurrentRoom(ChatRoom currentRoom) {
+        this.currentRoom = currentRoom;
     }
 }

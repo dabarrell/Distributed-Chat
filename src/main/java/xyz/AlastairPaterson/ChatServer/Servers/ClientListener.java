@@ -2,6 +2,7 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
@@ -9,6 +10,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientRequest;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomContentsClientResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;
@@ -60,6 +62,8 @@ public class ClientListener {
      * Processes incoming connections from clients
      */
     private void processConnection() {
+        Identity thisThreadId = null;
+
         while(true) {
             Socket connection = null;
             try {
@@ -71,52 +75,63 @@ public class ClientListener {
 
                 switch (clientMessage.getType()) {
                     case "newidentity":
-                        response = processNewClient(connection, clientRequest);
+                        thisThreadId = processIdentityRequest(clientRequest);
+                        response = processNewClient(connection, thisThreadId);
                         break;
+                    case "who":
+                        response = processWho(thisThreadId);
                     default:
                         throw new IOException("Oops");
                 }
 
                 SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
 
-            } catch (IOException e) {
-                Logger.error("Coordination server exception! {} {}", e.getMessage());
-                e.printStackTrace();
-            } catch (InterruptedException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    private Object processWho(Identity thisThreadId) {
+        return new RoomContentsClientResponse(thisThreadId.getCurrentRoom());
+    }
+
     /**
      * Processes a brand new client
      * @param connection The client's connection
-     * @param clientRequest The new identity information sent by the client
+     * @param newIdentity The new identity or null if the request was denied
      * @return A RoomChangeClientResponse to be returned to the client
      * @throws IOException If any IO exceptions occur these are passed to the caller
      */
-    private Object processNewClient(Socket connection, String clientRequest) throws IOException {
-        Object response;NewIdentityClientRequest requestObject = jsonSerializer.fromJson(clientRequest, NewIdentityClientRequest.class);
-        response = this.processIdentityRequest(requestObject);
-        SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
-        response = new RoomChangeClientResponse(requestObject.getIdentity(),
+    private Object processNewClient(Socket connection, Identity newIdentity) throws IOException {
+        if(newIdentity == null) {
+            // Request denied
+            return new NewIdentityClientResponse(false);
+        }
+
+        SocketServices.writeToSocket(connection, jsonSerializer.toJson(new NewIdentityClientResponse(true)));
+
+        //TODO: needs to work if user changes room
+        return new RoomChangeClientResponse(newIdentity.getScreenName(),
                 "",
                 "MainHall-" + StateManager.getInstance().getThisServerId());
-        return response;
     }
 
     /**
      * Processes a new identity request
-     * @param request The identity request
+     * @param requestString The identity request
      * @return A NewIdentityClientResponse to send to the client
      * @throws IOException If IO errors occur, thrown to caller
      */
-    private NewIdentityClientResponse processIdentityRequest(NewIdentityClientRequest request) throws IOException {
+    private Identity processIdentityRequest(String requestString) throws IOException {
+        NewIdentityClientRequest request = jsonSerializer.fromJson(requestString, NewIdentityClientRequest.class);
+
         if (request.getIdentity().length() > 16 || request.getIdentity().length() < 3) {
-            return new NewIdentityClientResponse(false);
+            return null;
         }
 
         boolean idRequestApproved = true;
+        Identity newId = null;
 
         IdentityCoordinationMessage coordinationRequest = new IdentityCoordinationMessage(StateManager.getInstance().getThisServerId(), request.getIdentity());
 
@@ -129,9 +144,11 @@ public class ClientListener {
         }
 
         if (idRequestApproved) {
-            Identity newId = new Identity(request.getIdentity());
+            ChatRoom defaultRoom = StateManager.getInstance().getHostedRooms().get(0);
+            newId = new Identity(request.getIdentity(), defaultRoom);
+
             StateManager.getInstance().getHostedIdentities().add(newId);
-            StateManager.getInstance().getHostedRooms().get(0).getMembers().add(newId);
+            defaultRoom.getMembers().add(newId);
         }
 
         IdentityUnlockMessage unlockMessage = new IdentityUnlockMessage(request.getIdentity());
@@ -140,6 +157,6 @@ public class ClientListener {
             s.sendMessage(unlockMessage);
         }
 
-        return new NewIdentityClientResponse(idRequestApproved);
+        return newId;
     }
 }
