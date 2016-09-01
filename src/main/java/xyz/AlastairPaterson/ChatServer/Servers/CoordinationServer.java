@@ -2,6 +2,7 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
 import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
@@ -56,6 +57,8 @@ public class CoordinationServer {
             workerThread.setName(id + "CoordinationListener");
             socket = new ServerSocket(this.coordinationPort);
             connected = true;
+
+            StateManager.getInstance().getHostedRooms().add(new ChatRoom("MainHall-" + id));
         }
         else {
             // Check we can talk to this server
@@ -88,7 +91,7 @@ public class CoordinationServer {
      * @return A JSON-encoded string with the result
      * @throws IOException Thrown if reading or writing fails
      */
-    protected String sendMessage(Message message) throws IOException {
+    String sendMessage(Message message) throws IOException {
         Socket remoteServer = new Socket(this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
