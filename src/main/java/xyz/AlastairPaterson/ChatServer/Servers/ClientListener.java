@@ -39,10 +39,6 @@ public class ClientListener {
         Thread listenerThread = new Thread(this::runServer);
         listenerThread.setName("ClientListener");
         listenerThread.start();
-
-        Thread runnerThread = new Thread(this::processConnection);
-        runnerThread.setName("ClientRunner");
-        runnerThread.start();
     }
 
     /**
@@ -51,6 +47,10 @@ public class ClientListener {
     private void runServer() {
         while(true) {
             try {
+                Thread runnerThread = new Thread(this::processConnection);
+                runnerThread.setName("ClientRunner");
+                runnerThread.start();
+
                 incomingConnections.add(listener.accept());
             } catch (IOException e) {
                 Logger.warn("An IO exception occurred: {}", e.getMessage());
@@ -64,32 +64,38 @@ public class ClientListener {
     private void processConnection() {
         Identity thisThreadId = null;
 
+        Socket connection;
+
+        try {
+            connection = incomingConnections.take();
         while(true) {
-            Socket connection = null;
-            try {
-                connection = incomingConnections.take();
-                String clientRequest = SocketServices.readFromSocket(connection);
-                Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
+            String clientRequest = SocketServices.readFromSocket(connection);
+            Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
 
-                Object response;
+            Object response;
 
-                switch (clientMessage.getType()) {
-                    case "newidentity":
-                        thisThreadId = processIdentityRequest(clientRequest);
-                        response = processNewClient(connection, thisThreadId);
-                        break;
-                    case "who":
-                        response = processWho(thisThreadId);
-                    default:
-                        throw new IOException("Oops");
-                }
+            if(clientMessage == null) {
+                throw new IOException("Request is null");
+            }
 
-                SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
+            switch (clientMessage.getType()) {
+                case "newidentity":
+                    thisThreadId = processIdentityRequest(clientRequest);
+                    response = processNewClient(connection, thisThreadId);
+                    break;
+                case "who":
+                    response = processWho(thisThreadId);
+                    break;
+                default:
+                    throw new IOException("Message invalid");
+            }
 
+            SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
+        }
             } catch (IOException | InterruptedException e) {
+                //TODO: disconnect the client
                 e.printStackTrace();
             }
-        }
     }
 
     private Object processWho(Identity thisThreadId) {
