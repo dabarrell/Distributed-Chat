@@ -10,7 +10,6 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientRequest;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomContentsClientResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;
@@ -62,46 +61,44 @@ public class ClientListener {
      * Processes incoming connections from clients
      */
     private void processConnection() {
-        Identity thisThreadId = null;
-
         Socket connection;
 
-        try {
-            connection = incomingConnections.take();
-        while(true) {
-            String clientRequest = SocketServices.readFromSocket(connection);
-            Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
+        while (!listener.isClosed()) {
+            try {
+                connection = incomingConnections.take();
 
-            Object response;
+                String clientRequest = SocketServices.readFromSocket(connection);
+                Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
 
-            if(clientMessage == null) {
-                throw new IOException("Request is null");
-            }
+                if (clientMessage == null) {
+                    throw new IOException("Request is null");
+                }
 
-            switch (clientMessage.getType()) {
-                case "newidentity":
-                    thisThreadId = processIdentityRequest(clientRequest);
-                    response = processNewClient(connection, thisThreadId);
-                    break;
-                case "who":
-                    response = processWho(thisThreadId);
-                    break;
-                default:
-                    throw new IOException("Message invalid");
-            }
+                if (!clientMessage.getType().equalsIgnoreCase("newidentity")) {
+                    throw new IOException("Sequence invalid");
+                }
 
-            SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
-        }
+                Identity newIdentity = processIdentityRequest(clientRequest, connection);
+                Object response = processNewClient(connection, newIdentity);
+
+                newIdentity.getCurrentRoom().getMembers().forEach(x -> {
+                    try {
+                        x.sendMessage(response);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+                SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
+
             } catch (IOException | InterruptedException e) {
                 //TODO: disconnect the client
                 e.printStackTrace();
             }
+        }
     }
 
-    private Object processWho(Identity thisThreadId) {
-        return new RoomContentsClientResponse(thisThreadId.getCurrentRoom());
-    }
-
+    //TODO: rename
     /**
      * Processes a brand new client
      * @param connection The client's connection
@@ -129,7 +126,7 @@ public class ClientListener {
      * @return A NewIdentityClientResponse to send to the client
      * @throws IOException If IO errors occur, thrown to caller
      */
-    private Identity processIdentityRequest(String requestString) throws IOException {
+    private Identity processIdentityRequest(String requestString, Socket clientSocket) throws IOException {
         NewIdentityClientRequest request = jsonSerializer.fromJson(requestString, NewIdentityClientRequest.class);
 
         if (request.getIdentity().length() > 16 || request.getIdentity().length() < 3) {
@@ -151,7 +148,7 @@ public class ClientListener {
 
         if (idRequestApproved) {
             ChatRoom defaultRoom = StateManager.getInstance().getHostedRooms().get(0);
-            newId = new Identity(request.getIdentity(), defaultRoom);
+            newId = new Identity(request.getIdentity(), defaultRoom, clientSocket);
 
             StateManager.getInstance().getHostedIdentities().add(newId);
             defaultRoom.getMembers().add(newId);

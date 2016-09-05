@@ -31,10 +31,14 @@ class SocketServices {
      * @throws IOException Thrown if reading fails
      */
     static String readFromSocket(Socket socket) throws IOException {
-        BufferedReader socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        return readFromSocket(socket.getInputStream());
+    }
+
+    static String readFromSocket(InputStream stream) throws IOException {
+        BufferedReader socketReader = new BufferedReader(new InputStreamReader(stream));
         String readData = socketReader.readLine();
 
-        Logger.debug("Read {} from {}", readData, socket.getInetAddress().toString());
+        Logger.debug("Read {}", readData);
         return readData;
     }
 }
