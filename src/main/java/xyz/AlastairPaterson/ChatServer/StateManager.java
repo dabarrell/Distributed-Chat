@@ -69,10 +69,10 @@ public class StateManager {
     /* Getters */
 
     /**
-     * Gets the rooms hosted on this coordination server
+     * Gets the rooms available in this system
      * @return A list of ChatRoom objects
      */
-    public List<ChatRoom> getHostedRooms() {
+    public List<ChatRoom> getRooms() {
         return hostedRooms;
     }
 

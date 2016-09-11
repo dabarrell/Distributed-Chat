@@ -79,6 +79,11 @@ public class ClientListener {
                 }
 
                 Identity newIdentity = processIdentityRequest(clientRequest, connection);
+
+                if (newIdentity == null) {
+                    continue;
+                }
+
                 Object response = processNewClient(connection, newIdentity);
 
                 newIdentity.getCurrentRoom().getMembers().forEach(x -> {
@@ -147,7 +152,7 @@ public class ClientListener {
         }
 
         if (idRequestApproved) {
-            ChatRoom defaultRoom = StateManager.getInstance().getHostedRooms().get(0);
+            ChatRoom defaultRoom = StateManager.getInstance().getRooms().get(0);
             newId = new Identity(request.getIdentity(), defaultRoom, clientSocket);
 
             StateManager.getInstance().getHostedIdentities().add(newId);

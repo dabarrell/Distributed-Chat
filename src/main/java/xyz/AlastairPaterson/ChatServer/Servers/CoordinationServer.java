@@ -58,7 +58,7 @@ public class CoordinationServer {
             socket = new ServerSocket(this.coordinationPort);
             connected = true;
 
-            StateManager.getInstance().getHostedRooms().add(new ChatRoom("MainHall-" + id, ""));
+            StateManager.getInstance().getRooms().add(new ChatRoom("MainHall-" + id, "", this));
         }
         else {
             // Check we can talk to this server
