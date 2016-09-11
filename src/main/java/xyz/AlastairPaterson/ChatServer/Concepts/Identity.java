@@ -1,8 +1,13 @@
 package xyz.AlastairPaterson.ChatServer.Concepts;
 
 import com.google.gson.Gson;
+import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.ListClientResponse;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomContentsClientResponse;
+import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.*;
 import java.net.Socket;
@@ -17,10 +22,12 @@ public class Identity {
     private final InputStream inputStream;
     private final OutputStream outputStream;
     private final Gson jsonSerializer = new Gson();
+    private Thread communicationThread;
 
     /**
      * Creates a new identity for a user
-     * @param screenName The user's screen name
+     *
+     * @param screenName  The user's screen name
      * @param currentRoom The current room of the user
      */
     public Identity(String screenName, ChatRoom currentRoom, Socket communicationSocket) throws IOException {
@@ -30,13 +37,14 @@ public class Identity {
         this.inputStream = communicationSocket.getInputStream();
         this.outputStream = communicationSocket.getOutputStream();
 
-        Thread communicationThread = new Thread(this::communicate);
+        communicationThread = new Thread(this::communicate);
         communicationThread.setName(this.screenName + "Communications");
         communicationThread.start();
     }
 
     /**
      * Get the user's screen name
+     *
      * @return The user's screen name
      */
     public String getScreenName() {
@@ -45,6 +53,7 @@ public class Identity {
 
     /**
      * Set the user's screen name
+     *
      * @param screenName The user's desired screen name
      */
     public void setScreenName(String screenName) {
@@ -53,6 +62,7 @@ public class Identity {
 
     /**
      * Gets the user's current room
+     *
      * @return The current room of the user
      */
     public ChatRoom getCurrentRoom() {
@@ -61,6 +71,7 @@ public class Identity {
 
     /**
      * Sets the user's current room
+     *
      * @param currentRoom The current room of the user
      */
     public void setCurrentRoom(ChatRoom currentRoom) {
@@ -68,7 +79,82 @@ public class Identity {
     }
 
     private void communicate() {
-        while(this.communicationSocket.isConnected()) {
+        boolean shouldRun = true;
+        try {
+            while (shouldRun && this.communicationSocket.isConnected() && !this.communicationThread.isInterrupted()) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(this.inputStream));
+
+                String inputString = reader.readLine();
+                if (inputString == null) break;
+
+                String messageType = jsonSerializer.fromJson(inputString, Message.class).getType();
+                switch (messageType) {
+                    case "who":
+                        this.sendMessage(processWho());
+                        break;
+                    case "message":
+                        this.processMessage(jsonSerializer.fromJson(inputString, MessageMessage.class));
+                        break;
+                    case "quit":
+                        shouldRun = false;
+                        break;
+                    case "list":
+                        this.processList();
+                        break;
+                    case "createroom":
+                        // TODO: implement
+                        break;
+                    case "join":
+                        // TODO: implement
+                        break;
+                    case "deleteroom":
+                        // TODO: implement
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            Logger.error("IOException occurred during client communication - terminating client");
+        }
+        finally {
+            this.processQuit();
+        }
+    }
+
+    private void processList() {
+        try {
+            this.sendMessage(new ListClientResponse());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void processQuit() {
+        try {
+            this.sendMessage(null);
+            communicationThread.interrupt();
+            this.communicationSocket.shutdownInput();
+            this.communicationSocket.shutdownOutput();
+            this.communicationSocket.close();
+        } catch (IOException e) {
+            Logger.warn("IO exception occurred during client disconnect");
+        }
+
+        try {
+            for (Identity i : this.getCurrentRoom().getMembers()) {
+                if (i.equals(this)) continue;
+
+                i.sendMessage(new RoomChangeClientResponse(this.getScreenName(), this.getCurrentRoom().getRoomId(), ""));
+            }
+
+            this.getCurrentRoom().getMembers().remove(this);
+            StateManager.getInstance().getHostedIdentities().remove(this);
+            //TODO: remove rooms that are owned by this identity
+        } catch (IOException e) {
+            Logger.error("IO exception occurred during cleanup - state may be invalid!");
+        }
+
+    }
+
     private void processMessage(MessageMessage messageMessage) {
         messageMessage.setIdentity(this.getScreenName());
         this.getCurrentRoom().getMembers().forEach(x -> {
