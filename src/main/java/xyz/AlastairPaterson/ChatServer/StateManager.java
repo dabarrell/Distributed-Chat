@@ -21,7 +21,7 @@ public class StateManager {
      * Gets the StateManager singleton
      * @return The global StateManager instance
      */
-    public static StateManager getInstance() {
+    public static synchronized StateManager getInstance() {
         return ourInstance;
     }
 
