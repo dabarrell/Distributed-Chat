@@ -69,22 +69,17 @@ public class Identity {
 
     private void communicate() {
         while(this.communicationSocket.isConnected()) {
+    private void processMessage(MessageMessage messageMessage) {
+        messageMessage.setIdentity(this.getScreenName());
+        this.getCurrentRoom().getMembers().forEach(x -> {
             try {
-                while(this.inputStream.available() == 0) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(this.inputStream));
-
-                    String inputString = reader.readLine();
-                    String messageType = jsonSerializer.fromJson(inputString, Message.class).getType();
-                    switch (messageType) {
-                        case "who":
-                            this.sendMessage(processWho());
-                            break;
-                    }
+                if (!x.equals(this)) {
+                    x.sendMessage(messageMessage);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
+        });
     }
 
     public void sendMessage(Object message) throws IOException {
