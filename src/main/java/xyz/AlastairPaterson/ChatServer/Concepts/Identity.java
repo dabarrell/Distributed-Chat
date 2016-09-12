@@ -120,15 +120,22 @@ public class Identity {
         }
     }
 
+    /**
+     * Handles the creration of a new room
+     *
+     * @param roomCreateClientRequest The client room creation message
+     * @throws IOException If sub-requests fail, IO exception is thrown
+     */
     private void processCreateRoom(RoomCreateClientRequest roomCreateClientRequest) throws IOException {
         if (this.ownedRoom != null) {
             // Check user doesn't own another room
             roomCreateClientRequest.setApproved(false);
         }
+        // My regex skills are lacking
+        // Validate room name conventions
         else if (roomCreateClientRequest.getRoomid().matches("\\A[^A-Za-z]")
                 || roomCreateClientRequest.getRoomid().length() < 3
                 || roomCreateClientRequest.getRoomid().length() > 16) {
-            // Validate room name conventions
             roomCreateClientRequest.setApproved(false);
         }
         else {
@@ -138,6 +145,7 @@ public class Identity {
 
             boolean allServersApprove = true;
 
+            // Ask servers if the name is available
             for(CoordinationServer i : StateManager.getInstance().getServers()) {
                 RoomCreateLockMessage response = jsonSerializer.fromJson(i.sendMessage(lockRequest), RoomCreateLockMessage.class);
                 if (!response.getLocked()) {
@@ -163,6 +171,12 @@ public class Identity {
         }
     }
 
+    /**
+     * Changes a client to a new room
+     *
+     * @param to The room the client is moving to
+     * @throws IOException If requests fail, IO exception is thrown
+     */
     private void changeRoom(ChatRoom to) throws IOException {
         RoomChangeClientResponse roomChange = new RoomChangeClientResponse(this.getScreenName(),
                 this.currentRoom.getRoomId(),
@@ -180,6 +194,9 @@ public class Identity {
         }
     }
 
+    /**
+     * Processes the 'list chat rooms' request
+     */
     private void processList() {
         try {
             this.sendMessage(new ListClientResponse());
@@ -188,6 +205,9 @@ public class Identity {
         }
     }
 
+    /**
+     * Processes a client's disconnection
+     */
     private void processQuit() {
         try {
             this.sendMessage(null);
@@ -215,6 +235,11 @@ public class Identity {
 
     }
 
+    /**
+     * Processes a request to send a chat message
+     *
+     * @param messageMessage The message being broadcast
+     */
     private void processMessage(MessageMessage messageMessage) {
         messageMessage.setIdentity(this.getScreenName());
         this.getCurrentRoom().getMembers().forEach(x -> {
@@ -228,6 +253,12 @@ public class Identity {
         });
     }
 
+    /**
+     * Sends a data message to a client
+     *
+     * @param message The data message being sent
+     * @throws IOException If an error occurs, throws IO exception
+     */
     public void sendMessage(Object message) throws IOException {
         BufferedWriter streamWriter = new BufferedWriter(new OutputStreamWriter(this.outputStream));
         streamWriter.write(jsonSerializer.toJson(message));
@@ -235,7 +266,12 @@ public class Identity {
         streamWriter.flush();
     }
 
-    private Object processWho() {
+    /**
+     * Processes a 'who' request
+     *
+     * @return The list of people in the current room
+     */
+    private RoomContentsClientResponse processWho() {
         return new RoomContentsClientResponse(this.getCurrentRoom());
     }
 }
