@@ -38,11 +38,12 @@ public class CoordinationServer {
 
     /**
      * Creates a new coordination server
-     * @param id The specified server ID
-     * @param hostname The host name or address
+     *
+     * @param id               The specified server ID
+     * @param hostname         The host name or address
      * @param coordinationPort The port for coordination operations
-     * @param clientPort The port for client operations
-     * @param localInstance If this is a locally running server
+     * @param clientPort       The port for client operations
+     * @param localInstance    If this is a locally running server
      * @throws IOException Thrown if initialization fails for some reason
      */
     public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws IOException {
@@ -53,7 +54,7 @@ public class CoordinationServer {
 
         Thread workerThread;
 
-        if(localInstance) {
+        if (localInstance) {
             // Start server
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
@@ -61,8 +62,7 @@ public class CoordinationServer {
             connected = true;
 
             StateManager.getInstance().getRooms().add(new ChatRoom("MainHall-" + id, "", this));
-        }
-        else {
+        } else {
             // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
             workerThread.setName(id + "CoordinationValidator");
@@ -73,6 +73,7 @@ public class CoordinationServer {
 
     /**
      * Determines if the server is reachable
+     *
      * @return True if available or local
      */
     public boolean isConnected() {
@@ -81,6 +82,7 @@ public class CoordinationServer {
 
     /**
      * The 'id' of the server
+     *
      * @return The server's id
      */
     public String getId() {
@@ -89,6 +91,7 @@ public class CoordinationServer {
 
     /**
      * Sends a message to the specified coordination server
+     *
      * @param message The message being sent
      * @return A JSON-encoded string with the result
      * @throws IOException Thrown if reading or writing fails
@@ -103,7 +106,7 @@ public class CoordinationServer {
      * Validates this server is reachable
      */
     private void validateConnectivity() {
-        while(true) {
+        while (true) {
             try {
                 this.sendMessage(new HelloMessage());
                 break;
@@ -111,8 +114,7 @@ public class CoordinationServer {
                 Logger.debug("Couldn't reach {} - error {}", this.id, e.getMessage());
                 try {
                     Thread.sleep(3000);
-                }
-                catch(InterruptedException ex) {
+                } catch (InterruptedException ex) {
                     Logger.error("Interrupted! {} {}", ex.getMessage(), ex.getStackTrace());
                 }
             }
@@ -125,7 +127,7 @@ public class CoordinationServer {
      * Runs a local coordination server
      */
     private void runServer() {
-        while(true) {
+        while (true) {
             try {
                 Socket newConnection = socket.accept();
 
@@ -139,6 +141,7 @@ public class CoordinationServer {
 
     /**
      * Processes a client connection
+     *
      * @param client The connection received
      */
     private void processCommand(Socket client) {
@@ -147,7 +150,7 @@ public class CoordinationServer {
             Message messageType = new Gson().fromJson(receivedData, Message.class);
 
             Object replyObject = null;
-            switch(messageType.getType()) {
+            switch (messageType.getType()) {
                 case "hello":
                     replyObject = processHelloMessage();
                     break;
@@ -171,6 +174,11 @@ public class CoordinationServer {
         }
     }
 
+    /**
+     * Processes a request to relinquish a room name lock
+     *
+     * @param roomReleaseLockMessage The release lock request
+     */
     private void processUnlockRoomRequest(RoomReleaseLockMessage roomReleaseLockMessage) {
         StateManager.getInstance().removeLock(new EntityLock(roomReleaseLockMessage.getRoomId(), roomReleaseLockMessage.getServerId(), LockType.RoomLock));
 
@@ -185,6 +193,12 @@ public class CoordinationServer {
         }
     }
 
+    /**
+     * Processes a room lock request
+     *
+     * @param roomCreateLockMessage The request to lock the room
+     * @return A response to the requesting coordination server
+     */
     private RoomCreateLockMessage processLockRoomRequest(RoomCreateLockMessage roomCreateLockMessage) {
         try {
             StateManager.getInstance().validateRoomOk(roomCreateLockMessage.getRoomid());
@@ -199,6 +213,7 @@ public class CoordinationServer {
 
     /**
      * Processes a releaseidentity message
+     *
      * @param identityUnlockMessage The received message
      */
     private void processUnlockIdentityRequest(IdentityUnlockMessage identityUnlockMessage) {
@@ -209,6 +224,7 @@ public class CoordinationServer {
 
     /**
      * Process a lockidentity request
+     *
      * @param identityCoordinationMessage The message received from the coordination server
      * @return A reply to send to the origin server
      */
@@ -232,6 +248,7 @@ public class CoordinationServer {
 
     /**
      * Processes a 'hello' message (out of spec, to validate connectivity)
+     *
      * @return A response hello message
      */
     private Object processHelloMessage() {
