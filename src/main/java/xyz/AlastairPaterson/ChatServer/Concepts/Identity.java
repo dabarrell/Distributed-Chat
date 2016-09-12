@@ -78,6 +78,9 @@ public class Identity {
         this.currentRoom = currentRoom;
     }
 
+    /**
+     * Runs client communications
+     */
     private void communicate() {
         boolean shouldRun = true;
         try {
@@ -121,7 +124,7 @@ public class Identity {
     }
 
     /**
-     * Handles the creration of a new room
+     * Handles the creation of a new room
      *
      * @param roomCreateClientRequest The client room creation message
      * @throws IOException If sub-requests fail, IO exception is thrown
