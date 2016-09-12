@@ -19,6 +19,7 @@ public class StateManager {
 
     /**
      * Gets the StateManager singleton
+     *
      * @return The global StateManager instance
      */
     public static synchronized StateManager getInstance() {
@@ -35,12 +36,14 @@ public class StateManager {
 
     private String thisServerId;
 
-    private StateManager() { }
+    private StateManager() {
+    }
 
     /* Adders */
 
     /**
      * Adds a coordination server to the configuration
+     *
      * @param server The new server being added
      */
     public void addServer(CoordinationServer server) {
@@ -49,8 +52,9 @@ public class StateManager {
 
     /**
      * Adds a lock to the StateManager
+     *
      * @param identity The identity being locked
-     * @param type The type of entity being locked
+     * @param type     The type of entity being locked
      */
     public void addLock(String identity, String serverName, LockType type) {
         this.lockedEntities.add(new EntityLock(identity, serverName, type));
@@ -60,6 +64,7 @@ public class StateManager {
 
     /**
      * Removes a lock
+     *
      * @param lock The lock to remove
      */
     public void removeLock(EntityLock lock) {
@@ -70,6 +75,7 @@ public class StateManager {
 
     /**
      * Gets the rooms available in this system
+     *
      * @return A list of ChatRoom objects
      */
     public List<ChatRoom> getRooms() {
@@ -78,6 +84,7 @@ public class StateManager {
 
     /**
      * Gets the identities hosted on this coordination server
+     *
      * @return A list of Identity objects
      */
     public List<Identity> getHostedIdentities() {
@@ -86,6 +93,7 @@ public class StateManager {
 
     /**
      * Gets the identities entities on this server
+     *
      * @return A list of EntityLock objects
      */
     public List<EntityLock> getLockedEntities() {
@@ -94,6 +102,7 @@ public class StateManager {
 
     /**
      * Gets the coordination servers known by this server
+     *
      * @return A list of CoordinationServer objects
      */
     public List<CoordinationServer> getServers() {
@@ -102,6 +111,7 @@ public class StateManager {
 
     /**
      * Gets the name of the local coordination server
+     *
      * @return The local coordination server name
      */
     public String getThisServerId() {
@@ -112,9 +122,10 @@ public class StateManager {
 
     /**
      * Sets the local coordination server ID
+     *
      * @param thisServerId The local coordination server ID
      */
-    public void setThisServerId(String thisServerId) {
+    void setThisServerId(String thisServerId) {
         this.thisServerId = thisServerId;
     }
 
@@ -122,6 +133,7 @@ public class StateManager {
 
     /**
      * Validates a proposed identity is OK
+     *
      * @param name The proposed client identity
      * @throws IdentityInUseException if the identity is in use on this server already
      */
@@ -134,16 +146,23 @@ public class StateManager {
 
     /**
      * Validates a proposed room name is OK
+     *
      * @param name The proposed room name
      * @throws IdentityInUseException If the room name is in use on this server already
      */
     public void validateRoomOk(String name) throws IdentityInUseException {
-        if(hostedRooms.stream().anyMatch(x -> x.getRoomId().equalsIgnoreCase(name))
+        if (hostedRooms.stream().anyMatch(x -> x.getRoomId().equalsIgnoreCase(name))
                 || lockedEntities.stream().anyMatch(x -> x.isLocked(name, LockType.RoomLock))) {
             throw new IdentityInUseException(name);
         }
     }
 
+    /**
+     * Finds a ChatRoom by ID
+     *
+     * @param roomId The chat room ID being requested
+     * @return The chat room, or null if it doesn't exist
+     */
     public ChatRoom getRoom(String roomId) {
         return hostedRooms.stream()
                 .filter(x -> x.getRoomId().equalsIgnoreCase(roomId))

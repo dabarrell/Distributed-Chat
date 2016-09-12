@@ -11,11 +11,12 @@ import java.net.Socket;
 class SocketServices {
     /**
      * Writes an object to a socket
-     * @param socket The destination socket
+     *
+     * @param socket  The destination socket
      * @param content The item to be written
      * @throws IOException Thrown if writing fails
      */
-     static void writeToSocket(Socket socket, Object content) throws IOException {
+    static void writeToSocket(Socket socket, Object content) throws IOException {
         BufferedWriter socketWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         Logger.debug("Writing {} to {}", content.toString(), socket.getInetAddress().toString());
 
@@ -26,6 +27,7 @@ class SocketServices {
 
     /**
      * Reads a string from a socket
+     *
      * @param socket The source socket
      * @return The string that is read
      * @throws IOException Thrown if reading fails
@@ -34,7 +36,14 @@ class SocketServices {
         return readFromSocket(socket.getInputStream());
     }
 
-    static String readFromSocket(InputStream stream) throws IOException {
+    /**
+     * Reads a string from an input stream
+     *
+     * @param stream The stream being read
+     * @return The string that is read
+     * @throws IOException Thrown if reading fails
+     */
+    private static String readFromSocket(InputStream stream) throws IOException {
         BufferedReader socketReader = new BufferedReader(new InputStreamReader(stream));
         String readData = socketReader.readLine();
 
