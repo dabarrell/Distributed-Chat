@@ -10,6 +10,8 @@ import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;
@@ -91,7 +93,7 @@ public class CoordinationServer {
      * @return A JSON-encoded string with the result
      * @throws IOException Thrown if reading or writing fails
      */
-    String sendMessage(Message message) throws IOException {
+    public String sendMessage(Message message) throws IOException {
         Socket remoteServer = new Socket(this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
@@ -155,12 +157,44 @@ public class CoordinationServer {
                 case "releaseidentity":
                     processUnlockIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityUnlockMessage.class));
                     break;
+                case "lockroomid":
+                    replyObject = processLockRoomRequest(jsonSerializer.fromJson(receivedData, RoomCreateLockMessage.class));
+                    break;
+                case "releaseroomid":
+                    processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
+                    break;
             }
 
             SocketServices.writeToSocket(client, new Gson().toJson(replyObject));
         } catch (IOException e) {
             Logger.warn("IO exception occurred: {}", e.getMessage());
         }
+    }
+
+    private void processUnlockRoomRequest(RoomReleaseLockMessage roomReleaseLockMessage) {
+        StateManager.getInstance().removeLock(new EntityLock(roomReleaseLockMessage.getRoomId(), roomReleaseLockMessage.getServerId(), LockType.RoomLock));
+
+        if (roomReleaseLockMessage.getApproved()) {
+            CoordinationServer owningServer = StateManager.getInstance().getServers()
+                    .stream()
+                    .filter(x -> x.getId().equalsIgnoreCase(roomReleaseLockMessage.getServerId()))
+                    .findFirst()
+                    .get();
+
+            StateManager.getInstance().getRooms().add(new ChatRoom(roomReleaseLockMessage.getRoomId(), null, owningServer));
+        }
+    }
+
+    private RoomCreateLockMessage processLockRoomRequest(RoomCreateLockMessage roomCreateLockMessage) {
+        try {
+            StateManager.getInstance().validateRoomOk(roomCreateLockMessage.getRoomid());
+            StateManager.getInstance().addLock(roomCreateLockMessage.getRoomid(), roomCreateLockMessage.getServerid(), LockType.RoomLock);
+            roomCreateLockMessage.setLocked(true);
+        } catch (IdentityInUseException e) {
+            roomCreateLockMessage.setLocked(false);
+        }
+
+        return roomCreateLockMessage;
     }
 
     /**

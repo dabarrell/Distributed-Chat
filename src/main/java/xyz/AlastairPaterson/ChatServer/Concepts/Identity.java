@@ -4,9 +4,8 @@ import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.ListClientResponse;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomContentsClientResponse;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.*;
+import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.*;
@@ -18,6 +17,7 @@ import java.net.Socket;
 public class Identity {
     private String screenName;
     private ChatRoom currentRoom;
+    private ChatRoom ownedRoom;
     private final Socket communicationSocket;
     private final InputStream inputStream;
     private final OutputStream outputStream;
@@ -102,7 +102,7 @@ public class Identity {
                         this.processList();
                         break;
                     case "createroom":
-                        // TODO: implement
+                        this.processCreateRoom(jsonSerializer.fromJson(inputString, RoomCreateClientRequest.class));
                         break;
                     case "join":
                         // TODO: implement
@@ -117,6 +117,66 @@ public class Identity {
         }
         finally {
             this.processQuit();
+        }
+    }
+
+    private void processCreateRoom(RoomCreateClientRequest roomCreateClientRequest) throws IOException {
+        if (this.ownedRoom != null) {
+            // Check user doesn't own another room
+            roomCreateClientRequest.setApproved(false);
+        }
+        else if (roomCreateClientRequest.getRoomid().matches("\\A[^A-Za-z]")
+                || roomCreateClientRequest.getRoomid().length() < 3
+                || roomCreateClientRequest.getRoomid().length() > 16) {
+            // Validate room name conventions
+            roomCreateClientRequest.setApproved(false);
+        }
+        else {
+            // Start asking servers if we're all G
+            RoomCreateLockMessage lockRequest = new RoomCreateLockMessage(roomCreateClientRequest.getRoomid(),
+                    StateManager.getInstance().getThisServerId());
+
+            boolean allServersApprove = true;
+
+            for(CoordinationServer i : StateManager.getInstance().getServers()) {
+                RoomCreateLockMessage response = jsonSerializer.fromJson(i.sendMessage(lockRequest), RoomCreateLockMessage.class);
+                if (!response.getLocked()) {
+                    allServersApprove = false;
+                    break;
+                }
+            }
+            roomCreateClientRequest.setApproved(allServersApprove);
+
+            RoomReleaseLockMessage roomUnlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),
+                    roomCreateClientRequest.getRoomid(),
+                    allServersApprove);
+
+            for(CoordinationServer i : StateManager.getInstance().getServers()) {
+                i.sendMessage(roomUnlockMessage);
+            }
+        }
+
+        this.sendMessage(roomCreateClientRequest);
+
+        if (roomCreateClientRequest.getApproved()) {
+            this.changeRoom(StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid()));
+        }
+    }
+
+    private void changeRoom(ChatRoom to) throws IOException {
+        RoomChangeClientResponse roomChange = new RoomChangeClientResponse(this.getScreenName(),
+                this.currentRoom.getRoomId(),
+                to.getRoomId());
+
+        for (Identity identity : this.currentRoom.getMembers()) {
+            identity.sendMessage(roomChange);
+        }
+
+        this.currentRoom.getMembers().remove(this);
+        to.getMembers().add(this);
+
+        for (Identity identity: this.currentRoom.getMembers()) {
+            identity.sendMessage(roomChange);
         }
     }
 

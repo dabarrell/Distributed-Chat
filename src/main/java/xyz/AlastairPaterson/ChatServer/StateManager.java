@@ -126,10 +126,8 @@ public class StateManager {
      * @throws IdentityInUseException if the identity is in use on this server already
      */
     public void validateIdentityOk(String name) throws IdentityInUseException {
-        if (hostedIdentities.stream().anyMatch(x -> x.getScreenName().equalsIgnoreCase(name))) {
-            throw new IdentityInUseException(name);
-        }
-        if (lockedEntities.stream().anyMatch(x -> x.isLocked(name, LockType.IdentityLock))) {
+        if (hostedIdentities.stream().anyMatch(x -> x.getScreenName().equalsIgnoreCase(name))
+                || lockedEntities.stream().anyMatch(x -> x.isLocked(name, LockType.IdentityLock))) {
             throw new IdentityInUseException(name);
         }
     }
@@ -140,8 +138,16 @@ public class StateManager {
      * @throws IdentityInUseException If the room name is in use on this server already
      */
     public void validateRoomOk(String name) throws IdentityInUseException {
-        if(hostedRooms.stream().anyMatch(x -> x.getRoomId().equalsIgnoreCase(name))) {
+        if(hostedRooms.stream().anyMatch(x -> x.getRoomId().equalsIgnoreCase(name))
+                || lockedEntities.stream().anyMatch(x -> x.isLocked(name, LockType.RoomLock))) {
             throw new IdentityInUseException(name);
         }
+    }
+
+    public ChatRoom getRoom(String roomId) {
+        return hostedRooms.stream()
+                .filter(x -> x.getRoomId().equalsIgnoreCase(roomId))
+                .findFirst()
+                .get();
     }
 }
