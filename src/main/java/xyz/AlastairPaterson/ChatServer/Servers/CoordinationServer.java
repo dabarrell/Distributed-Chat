@@ -7,7 +7,7 @@ import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
 import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomCreateLockMessage;
@@ -172,7 +172,7 @@ public class CoordinationServer {
                     replyObject = processHelloMessage();
                     break;
                 case "lockidentity":
-                    replyObject = processIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityCoordinationMessage.class));
+                    replyObject = processIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityLockMessage.class));
                     break;
                 case "releaseidentity":
                     processUnlockIdentityRequest(jsonSerializer.fromJson(receivedData, IdentityUnlockMessage.class));
@@ -247,7 +247,7 @@ public class CoordinationServer {
      * @param identityCoordinationMessage The message received from the coordination server
      * @return A reply to send to the origin server
      */
-    private IdentityCoordinationMessage processIdentityRequest(IdentityCoordinationMessage identityCoordinationMessage) {
+    private IdentityLockMessage processIdentityRequest(IdentityLockMessage identityCoordinationMessage) {
         boolean approved;
         try {
             StateManager.getInstance().validateIdentityOk(identityCoordinationMessage.getIdentity());
@@ -260,7 +260,7 @@ public class CoordinationServer {
                 identityCoordinationMessage.getServerId(),
                 LockType.IdentityLock);
 
-        return new IdentityCoordinationMessage(StateManager.getInstance().getThisServerId(),
+        return new IdentityLockMessage(StateManager.getInstance().getThisServerId(),
                 identityCoordinationMessage.getIdentity(),
                 approved);
     }

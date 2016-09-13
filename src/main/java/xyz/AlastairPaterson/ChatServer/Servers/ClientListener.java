@@ -4,11 +4,8 @@ import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
-import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityCoordinationMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.*;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
-import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientRequest;
-import xyz.AlastairPaterson.ChatServer.Messages.Identity.NewIdentityClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
@@ -67,34 +64,7 @@ public class ClientListener {
             try {
                 connection = incomingConnections.take();
 
-                String clientRequest = SocketServices.readFromSocket(connection);
-                Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
-
-                if (clientMessage == null) {
-                    throw new IOException("Request is null");
-                }
-
-                if (!clientMessage.getType().equalsIgnoreCase("newidentity")) {
-                    throw new IOException("Sequence invalid");
-                }
-
-                Identity newIdentity = processIdentityRequest(clientRequest, connection);
-
-                if (newIdentity == null) {
-                    continue;
-                }
-
-                Object response = processNewClient(connection, newIdentity);
-
-                newIdentity.getCurrentRoom().getMembers().forEach(x -> {
-                    try {
-                        x.sendMessage(response);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-                SocketServices.writeToSocket(connection, jsonSerializer.toJson(response));
+                this.establishClient(connection);
 
             } catch (IOException | InterruptedException e) {
                 //TODO: disconnect the client
@@ -103,68 +73,81 @@ public class ClientListener {
         }
     }
 
-    //TODO: rename
-    /**
-     * Processes a brand new client
-     * @param connection The client's connection
-     * @param newIdentity The new identity or null if the request was denied
-     * @return A RoomChangeClientResponse to be returned to the client
-     * @throws IOException If any IO exceptions occur these are passed to the caller
-     */
-    private Object processNewClient(Socket connection, Identity newIdentity) throws IOException {
-        if(newIdentity == null) {
-            // Request denied
-            return new NewIdentityClientResponse(false);
+    private void establishClient(Socket connection) throws IOException {
+        String clientRequest = SocketServices.readFromSocket(connection);
+        Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
+
+        if (clientMessage == null) {
+            throw new IOException("Request is null");
         }
 
-        SocketServices.writeToSocket(connection, jsonSerializer.toJson(new NewIdentityClientResponse(true)));
-
-        //TODO: needs to work if user changes room
-        return new RoomChangeClientResponse(newIdentity.getScreenName(),
-                "",
-                "MainHall-" + StateManager.getInstance().getThisServerId());
+        switch(clientMessage.getType()) {
+            case "newidentity":
+                this.processNewIdentity(jsonSerializer.fromJson(clientRequest, NewIdentityRequest.class), connection);
+            case "movejoin":
+                this.processMoveIdentity(jsonSerializer.fromJson(clientRequest, MoveJoinClientRequest.class), connection);
+        }
     }
 
-    /**
-     * Processes a new identity request
-     * @param requestString The identity request
-     * @return A NewIdentityClientResponse to send to the client
-     * @throws IOException If IO errors occur, thrown to caller
-     */
-    private Identity processIdentityRequest(String requestString, Socket clientSocket) throws IOException {
-        NewIdentityClientRequest request = jsonSerializer.fromJson(requestString, NewIdentityClientRequest.class);
+    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, Socket connection) {
+    }
 
-        if (request.getIdentity().length() > 16 || request.getIdentity().length() < 3) {
-            return null;
+    private void processNewIdentity(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
+        boolean identityOk = this.validateIdentity(newIdentityRequest.getIdentity());
+
+        if (identityOk) {
+            Logger.info("Identity OK - continuing");
+            createValidClient(newIdentityRequest, connection);
         }
 
-        boolean idRequestApproved = true;
-        Identity newId = null;
+        SocketServices.writeToSocket(connection, jsonSerializer.toJson(new NewIdentityResponse(identityOk)));
 
-        IdentityCoordinationMessage coordinationRequest = new IdentityCoordinationMessage(StateManager.getInstance().getThisServerId(), request.getIdentity());
+        this.unlockIdentity(newIdentityRequest.getIdentity());
 
-        for(CoordinationServer s: StateManager.getInstance().getServers()) {
-            IdentityCoordinationMessage response = jsonSerializer.fromJson(s.sendMessage(coordinationRequest), IdentityCoordinationMessage.class);
-            if (!response.isApproved()) {
-                idRequestApproved = false;
-                break;
+        if (identityOk) {
+            this.broadcastNewUser(newIdentityRequest.getIdentity(), StateManager.getInstance().getMainhall());
+        }
+    }
+
+    private void broadcastNewUser(String identity, ChatRoom mainhall) throws IOException {
+        mainhall.broadcast(new RoomChangeClientResponse(identity, "", mainhall.getRoomId()));
+    }
+
+    private void unlockIdentity(String identity) throws IOException {
+        IdentityUnlockMessage unlockMessage = new IdentityUnlockMessage(identity);
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            coordinationServer.sendMessage(unlockMessage);
+        }
+    }
+
+    private void createValidClient(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
+        ChatRoom mainHall = StateManager.getInstance().getMainhall();
+
+        Identity newIdentity = new Identity(newIdentityRequest.getIdentity(), mainHall);
+
+        ClientConnection newClientConnection = new ClientConnection(connection, newIdentity);
+        newIdentity.setConnection(newClientConnection);
+
+        StateManager.getInstance().getHostedIdentities().add(newIdentity);
+
+        mainHall.getMembers().add(newIdentity);
+    }
+
+    private boolean validateIdentity(String identity) throws IOException {
+        if (identity.length() < 3 || identity.length() > 16) {
+            return false;
+        }
+
+        IdentityLockMessage lockMessage = new IdentityLockMessage(StateManager.getInstance().getThisServerId(), identity);
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            IdentityLockMessage reply = jsonSerializer.fromJson(coordinationServer.sendMessage(lockMessage), IdentityLockMessage.class);
+
+            if (!reply.isApproved()) {
+                return false;
             }
         }
 
-        if (idRequestApproved) {
-            ChatRoom defaultRoom = StateManager.getInstance().getRooms().get(0);
-            newId = new Identity(request.getIdentity(), defaultRoom, clientSocket);
-
-            StateManager.getInstance().getHostedIdentities().add(newId);
-            defaultRoom.getMembers().add(newId);
-        }
-
-        IdentityUnlockMessage unlockMessage = new IdentityUnlockMessage(request.getIdentity());
-
-        for(CoordinationServer s: StateManager.getInstance().getServers()) {
-            s.sendMessage(unlockMessage);
-        }
-
-        return newId;
+        return true;
     }
 }

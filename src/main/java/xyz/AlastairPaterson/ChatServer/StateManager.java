@@ -168,4 +168,13 @@ public class StateManager {
     public CoordinationServer getThisCoordinationServer() {
         return this.servers.stream().filter(x -> x.getId().equals(this.thisServerId)).findFirst().get();
     }
+
+    /**
+     * Gets the MainHall room for this server
+     *
+     * @return The MainHall room for this server
+     */
+    public ChatRoom getMainhall() {
+        return this.getRoom("MainHall-" + this.getThisServerId());
+    }
 }
