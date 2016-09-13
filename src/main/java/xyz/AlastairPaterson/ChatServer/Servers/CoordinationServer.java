@@ -147,10 +147,9 @@ public class CoordinationServer {
     private void processCommand(Socket client) {
         try {
             String receivedData = SocketServices.readFromSocket(client);
-            Message messageType = new Gson().fromJson(receivedData, Message.class);
 
             Object replyObject = null;
-            switch (messageType.getType()) {
+            switch (jsonSerializer.fromJson(receivedData, Message.class).getType()) {
                 case "hello":
                     replyObject = processHelloMessage();
                     break;
@@ -168,7 +167,7 @@ public class CoordinationServer {
                     break;
             }
 
-            SocketServices.writeToSocket(client, new Gson().toJson(replyObject));
+            SocketServices.writeToSocket(client, jsonSerializer.toJson(replyObject));
         } catch (IOException e) {
             Logger.warn("IO exception occurred: {}", e.getMessage());
         }

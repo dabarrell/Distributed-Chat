@@ -20,28 +20,30 @@ public class Main {
 
     /**
      * Where all the magic happens
+     *
      * @param args Arguments
      */
     public static void main(String[] args) {
         ArgumentParser parser = configureArgumentParser();
 
-        Namespace ns = null;
+        Namespace arguments = null;
         try {
-            ns = parser.parseArgs(args);
-        } catch(ArgumentParserException ex) {
+            arguments = parser.parseArgs(args);
+        } catch (ArgumentParserException ex) {
             parser.handleError(ex);
             System.exit(1);
         }
 
-        if(ns.getBoolean("verbose")) {
+        if (arguments.getBoolean("verbose")) {
             Configurator.defaultConfig().level(Level.TRACE).activate();
             Logger.debug("Verbose logging enabled");
         }
 
-        StateManager.getInstance().setThisServerId(ns.getString("name"));
+        StateManager.getInstance().setThisServerId(arguments.getString("name"));
+
         try {
-            processServers(readConfiguration(ns.get("l")));
-        } catch(Exception ex) {
+            processServers(readConfiguration(arguments.get("l")));
+        } catch (Exception ex) {
             Logger.error(ex.getMessage());
             System.exit(1);
         }
@@ -51,6 +53,7 @@ public class Main {
 
     /**
      * Configures an argument parser
+     *
      * @return The configured argument parser
      */
     private static ArgumentParser configureArgumentParser() {
@@ -77,6 +80,7 @@ public class Main {
 
     /**
      * Reads the configuration for the environment
+     *
      * @param path The path to the configuration file
      * @return A list of configuration entries
      */
@@ -86,7 +90,7 @@ public class Main {
         String currentLine;
         List<String> returnArray = new ArrayList<>();
 
-        while(true) {
+        while (true) {
             currentLine = reader.readLine();
             if (currentLine == null) break;
             returnArray.add(currentLine);
@@ -101,13 +105,14 @@ public class Main {
 
     /**
      * Processes configuration to learn about other servers
+     *
      * @param configurationLines A list of tab delimited configuration options
      */
     private static void processServers(List<String> configurationLines) throws Exception {
         Logger.debug("Beginning config processing");
         int localPort = 0;
 
-        for (String currentLine: configurationLines) {
+        for (String currentLine : configurationLines) {
             Logger.debug("Adding config: {}", currentLine);
             String[] configuration = currentLine.split("\t");
 
@@ -140,15 +145,16 @@ public class Main {
 
     /**
      * Validates connectivity to other configured servers
+     *
      * @throws InterruptedException If the thread checking connectivity is interrupted
      */
     private static void validateConnectivity() throws InterruptedException {
         // Wait one second for servers to start up
         Thread.sleep(1000);
-        while(!StateManager.getInstance().getServers().stream().allMatch(CoordinationServer::isConnected)) {
+        while (!StateManager.getInstance().getServers().stream().allMatch(CoordinationServer::isConnected)) {
             StringBuilder sb = new StringBuilder();
             sb.append("Can't reach all servers, waiting three seconds before trying again");
-            for (CoordinationServer s: StateManager.getInstance().getServers()) {
+            for (CoordinationServer s : StateManager.getInstance().getServers()) {
                 sb.append("\nServer ").append(s.getId()).append(" connected: ").append(s.isConnected());
             }
             Logger.warn(sb.toString());
