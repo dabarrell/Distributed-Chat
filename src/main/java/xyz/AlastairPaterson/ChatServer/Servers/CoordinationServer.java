@@ -90,6 +90,24 @@ public class CoordinationServer {
     }
 
     /**
+     * The host name of the server
+     *
+     * @return The server hostname
+     */
+    public String getHostname() {
+        return hostname;
+    }
+
+    /**
+     * The client listening port of the server
+     *
+     * @return The client port
+     */
+    public int getClientPort() {
+        return clientPort;
+    }
+
+    /**
      * Sends a message to the specified coordination server
      *
      * @param message The message being sent
@@ -164,6 +182,8 @@ public class CoordinationServer {
                     break;
                 case "releaseroomid":
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
+                    break;
+                case "movejoin":
                     break;
             }
 

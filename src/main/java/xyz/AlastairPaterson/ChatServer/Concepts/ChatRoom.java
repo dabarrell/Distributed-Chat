@@ -70,7 +70,7 @@ public class ChatRoom {
      *
      * @return True if room is on a different server, false otherwise
      */
-    public boolean isForeignRoom() {
+    private boolean isForeignRoom() {
         return ! this.ownerServer.getId().equals(StateManager.getInstance().getThisServerId());
     }
 

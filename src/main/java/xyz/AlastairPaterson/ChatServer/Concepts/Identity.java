@@ -3,6 +3,7 @@ package xyz.AlastairPaterson.ChatServer.Concepts;
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
+import xyz.AlastairPaterson.ChatServer.Messages.Identity.ServerChangeCoordinationMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.*;
@@ -50,15 +51,6 @@ public class Identity {
      */
     public String getScreenName() {
         return screenName;
-    }
-
-    /**
-     * Set the user's screen name
-     *
-     * @param screenName The user's desired screen name
-     */
-    public void setScreenName(String screenName) {
-        this.screenName = screenName;
     }
 
     /**
@@ -131,7 +123,9 @@ public class Identity {
         try {
             destinationRoom.join(this);
         } catch (RemoteChatRoomException e) {
-            // foreign server
+            destinationRoom.getOwnerServer().sendMessage(new ServerChangeCoordinationMessage(this.currentRoom, destinationRoom, this));
+            this.sendMessage(new RoomChangeRouteResponse(destinationRoom));
+            this.getCurrentRoom().leave(this, destinationRoom);
         }
     }
 
@@ -146,6 +140,7 @@ public class Identity {
             // Check user doesn't own another room
             roomCreateClientRequest.setApproved(false);
         }
+
         // My regex skills are lacking
         // Validate room name conventions
         else if (roomCreateClientRequest.getRoomid().matches("\\A[^A-Za-z]")
@@ -187,6 +182,7 @@ public class Identity {
                 ChatRoom newRoom = StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid());
                 newRoom.setOwner(this);
                 newRoom.join(this);
+                this.ownedRoom = newRoom;
             } catch (RemoteChatRoomException ignored) { }
         }
     }

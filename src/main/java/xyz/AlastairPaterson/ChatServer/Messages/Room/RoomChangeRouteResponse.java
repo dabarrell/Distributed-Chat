@@ -1,6 +1,8 @@
 package xyz.AlastairPaterson.ChatServer.Messages.Room;
 
+import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 
 /**
  * Created by atp on 12/9/16.
@@ -10,10 +12,10 @@ public class RoomChangeRouteResponse extends Message {
     private String host;
     private String port;
 
-    public RoomChangeRouteResponse (String roomId, String host, int port) {
+    public RoomChangeRouteResponse(ChatRoom room) {
         super("route");
-        this.roomid = roomId;
-        this.host = host;
-        this.port = Integer.toString(port);
+        this.roomid = room.getRoomId();
+        this.host = room.getOwnerServer().getHostname();
+        this.port = String.valueOf(room.getOwnerServer().getClientPort());
     }
 }
