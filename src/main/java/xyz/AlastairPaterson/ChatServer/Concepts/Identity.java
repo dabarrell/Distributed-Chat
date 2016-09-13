@@ -2,6 +2,7 @@ package xyz.AlastairPaterson.ChatServer.Concepts;
 
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.*;
@@ -74,7 +75,7 @@ public class Identity {
      *
      * @param currentRoom The current room of the user
      */
-    public void setCurrentRoom(ChatRoom currentRoom) {
+    void setCurrentRoom(ChatRoom currentRoom) {
         this.currentRoom = currentRoom;
     }
 
@@ -108,7 +109,7 @@ public class Identity {
                         this.processCreateRoom(jsonSerializer.fromJson(inputString, RoomCreateClientRequest.class));
                         break;
                     case "join":
-                        // TODO: implement
+                        this.processSwitchRoom(jsonSerializer.fromJson(inputString, RoomChangeClientRequest.class));
                         break;
                     case "deleteroom":
                         // TODO: implement
@@ -120,6 +121,17 @@ public class Identity {
         }
         finally {
             this.processQuit();
+        }
+    }
+
+    private void processSwitchRoom(RoomChangeClientRequest roomChangeClientRequest) throws IOException {
+
+        ChatRoom destinationRoom = StateManager.getInstance().getRoom(roomChangeClientRequest.getRoomId());
+
+        try {
+            destinationRoom.join(this);
+        } catch (RemoteChatRoomException e) {
+            // foreign server
         }
     }
 
@@ -170,30 +182,12 @@ public class Identity {
         this.sendMessage(roomCreateClientRequest);
 
         if (roomCreateClientRequest.getApproved()) {
-            this.changeRoom(StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid()));
-        }
-    }
-
-    /**
-     * Changes a client to a new room
-     *
-     * @param to The room the client is moving to
-     * @throws IOException If requests fail, IO exception is thrown
-     */
-    private void changeRoom(ChatRoom to) throws IOException {
-        RoomChangeClientResponse roomChange = new RoomChangeClientResponse(this.getScreenName(),
-                this.currentRoom.getRoomId(),
-                to.getRoomId());
-
-        for (Identity identity : this.currentRoom.getMembers()) {
-            identity.sendMessage(roomChange);
-        }
-
-        this.currentRoom.getMembers().remove(this);
-        to.getMembers().add(this);
-
-        for (Identity identity: this.currentRoom.getMembers()) {
-            identity.sendMessage(roomChange);
+            // RemoteChatRoomException can't occur if we're creating on this server
+            try {
+                ChatRoom newRoom = StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid());
+                newRoom.setOwner(this);
+                newRoom.join(this);
+            } catch (RemoteChatRoomException ignored) { }
         }
     }
 
@@ -213,6 +207,15 @@ public class Identity {
      */
     private void processQuit() {
         try {
+            this.getCurrentRoom().leave(this);
+
+            StateManager.getInstance().getHostedIdentities().remove(this);
+            //TODO: remove rooms that are owned by this identity
+        } catch (IOException e) {
+            Logger.error("IO exception occurred during cleanup - state may be invalid!");
+        }
+
+        try {
             this.sendMessage(null);
             communicationThread.interrupt();
             this.communicationSocket.shutdownInput();
@@ -222,38 +225,18 @@ public class Identity {
             Logger.warn("IO exception occurred during client disconnect");
         }
 
-        try {
-            for (Identity i : this.getCurrentRoom().getMembers()) {
-                if (i.equals(this)) continue;
-
-                i.sendMessage(new RoomChangeClientResponse(this.getScreenName(), this.getCurrentRoom().getRoomId(), ""));
-            }
-
-            this.getCurrentRoom().getMembers().remove(this);
-            StateManager.getInstance().getHostedIdentities().remove(this);
-            //TODO: remove rooms that are owned by this identity
-        } catch (IOException e) {
-            Logger.error("IO exception occurred during cleanup - state may be invalid!");
-        }
-
     }
 
     /**
      * Processes a request to send a chat message
      *
      * @param messageMessage The message being broadcast
+     * @throws IOException If sending causes IO exception, this is re-thrown
      */
-    private void processMessage(MessageMessage messageMessage) {
+    private void processMessage(MessageMessage messageMessage) throws IOException {
         messageMessage.setIdentity(this.getScreenName());
-        this.getCurrentRoom().getMembers().forEach(x -> {
-            try {
-                if (!x.equals(this)) {
-                    x.sendMessage(messageMessage);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+
+        this.getCurrentRoom().broadcast(messageMessage, this);
     }
 
     /**

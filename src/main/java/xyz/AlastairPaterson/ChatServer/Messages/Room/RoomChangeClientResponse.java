@@ -1,5 +1,7 @@
 package xyz.AlastairPaterson.ChatServer.Messages.Room;
 
+import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
+import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 
 /**
@@ -18,5 +20,12 @@ public class RoomChangeClientResponse extends Message {
         this.identity = identity;
         this.former = from;
         this.roomid = to;
+    }
+
+    public RoomChangeClientResponse(Identity identity, ChatRoom from, ChatRoom to) {
+        super("roomchange");
+        this.identity = identity.getScreenName();
+        this.former = from.getRoomId();
+        this.roomid = to.getRoomId();
     }
 }

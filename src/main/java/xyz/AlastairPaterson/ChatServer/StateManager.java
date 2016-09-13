@@ -36,8 +36,7 @@ public class StateManager {
 
     private String thisServerId;
 
-    private StateManager() {
-    }
+    private StateManager() { }
 
     /* Adders */
 
@@ -46,7 +45,7 @@ public class StateManager {
      *
      * @param server The new server being added
      */
-    public void addServer(CoordinationServer server) {
+    void addServer(CoordinationServer server) {
         this.servers.add(server);
     }
 
@@ -89,15 +88,6 @@ public class StateManager {
      */
     public List<Identity> getHostedIdentities() {
         return hostedIdentities;
-    }
-
-    /**
-     * Gets the identities entities on this server
-     *
-     * @return A list of EntityLock objects
-     */
-    public List<EntityLock> getLockedEntities() {
-        return lockedEntities;
     }
 
     /**
@@ -168,5 +158,14 @@ public class StateManager {
                 .filter(x -> x.getRoomId().equalsIgnoreCase(roomId))
                 .findFirst()
                 .get();
+    }
+
+    /**
+     * Gets the local coordination server instance
+     *
+     * @return The local coordination server reference
+     */
+    public CoordinationServer getThisCoordinationServer() {
+        return this.servers.stream().filter(x -> x.getId().equals(this.thisServerId)).findFirst().get();
     }
 }
