@@ -5,13 +5,13 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 /**
  * A request from a client concerning a new identity
  */
-public class NewIdentityClientRequest extends Message {
+public class NewIdentityRequest extends Message {
     private String identity;
 
     /**
      * Creates a NewIdentityRequest
      */
-    public NewIdentityClientRequest() {
+    public NewIdentityRequest() {
         super("newidentity");
     }
 

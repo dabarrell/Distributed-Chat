@@ -5,7 +5,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 /**
  * Represents an identity request coordination message
  */
-public class IdentityCoordinationMessage extends Message {
+public class IdentityLockMessage extends Message {
     private String serverid;
 
     private String identity;
@@ -17,7 +17,7 @@ public class IdentityCoordinationMessage extends Message {
      * @param serverId The server requesting coordination
      * @param identity The identity requested
      */
-    public IdentityCoordinationMessage(String serverId, String identity) {
+    public IdentityLockMessage(String serverId, String identity) {
         super("lockidentity");
         this.serverid = serverId;
         this.identity = identity;
@@ -29,7 +29,7 @@ public class IdentityCoordinationMessage extends Message {
      * @param identity The identity requested
      * @param isApproved True if identity approved, false otherwise
      */
-    public IdentityCoordinationMessage(String serverId, String identity, boolean isApproved) {
+    public IdentityLockMessage(String serverId, String identity, boolean isApproved) {
         super("lockidentity");
         this.serverid = serverId;
         this.identity = identity;
@@ -39,7 +39,7 @@ public class IdentityCoordinationMessage extends Message {
     /**
      * Creates a new empty coordination request for JSON serialization
      */
-    public IdentityCoordinationMessage() {
+    public IdentityLockMessage() {
         super("lockidentity");
     }
 
