@@ -8,6 +8,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.pmw.tinylog.Configurator;
 import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 
@@ -136,11 +138,29 @@ public class Main {
         Logger.debug("Config loaded, validating connectivity");
 
         validateConnectivity();
+
+        informServersOfMainHall();
+
         new ClientListener(localPort);
 
         Logger.debug("All servers reached. Chat service now available");
 
         Logger.debug("Finished config processing");
+    }
+
+    private static void informServersOfMainHall() throws IOException {
+        String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
+        RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
+        RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
+                continue;
+            }
+
+            coordinationServer.sendMessage(lockMessage);
+            coordinationServer.sendMessage(unlockMessage);
+        }
     }
 
     /**

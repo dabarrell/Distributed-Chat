@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
+import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityOwnsRoomException;
 import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.ServerChangeCoordinationMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
@@ -11,6 +12,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.*;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateClientRequest;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientRequest;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeRouteResponse;
@@ -20,7 +22,7 @@ import java.io.*;
 import java.net.Socket;
 
 /**
- * Created by atp on 13/9/16.
+ * Represents a connection between the server and the client
  */
 public class ClientConnection {
     private final Identity identity;
@@ -34,7 +36,7 @@ public class ClientConnection {
     private final Gson jsonSerializer = new Gson();
 
 
-    public ClientConnection(Socket socket, Identity identity) throws IOException {
+    ClientConnection(Socket socket, Identity identity) throws IOException {
         this.identity = identity;
         this.socket = socket;
         this.inputStream = socket.getInputStream();
@@ -77,7 +79,7 @@ public class ClientConnection {
                         this.processSwitchRoom(jsonSerializer.fromJson(inputString, RoomChangeClientRequest.class));
                         break;
                     case "deleteroom":
-                        // TODO: implement
+                        this.processDeleteRoom(jsonSerializer.fromJson(inputString, RoomDelete.class));
                         break;
                 }
             }
@@ -87,6 +89,20 @@ public class ClientConnection {
         finally {
             this.processQuit();
         }
+    }
+
+    private void processDeleteRoom(RoomDelete roomDelete) throws IOException {
+        if (this.identity.getOwnedRoom() == null
+                || !this.identity.getOwnedRoom().getRoomId().equalsIgnoreCase(roomDelete.getRoomId())) {
+            // Must own room to delete it
+            roomDelete.setApproved(false);
+        }
+        else {
+            this.identity.getOwnedRoom().destroy();
+            roomDelete.setApproved(true);
+        }
+
+        this.sendMessage(roomDelete);
     }
 
     private void processSwitchRoom(RoomChangeClientRequest roomChangeClientRequest) throws IOException {
@@ -99,6 +115,8 @@ public class ClientConnection {
             destinationRoom.getOwnerServer().sendMessage(new ServerChangeCoordinationMessage(this.identity.getCurrentRoom(), destinationRoom, this.identity));
             this.sendMessage(new RoomChangeRouteResponse(destinationRoom));
             this.identity.getCurrentRoom().leave(this.identity, destinationRoom);
+        } catch (IdentityOwnsRoomException e) {
+            e.printStackTrace();
         }
     }
 
@@ -156,7 +174,7 @@ public class ClientConnection {
                 newRoom.setOwner(this.identity);
                 newRoom.join(this.identity);
                 this.identity.setOwnedRoom(newRoom);
-            } catch (RemoteChatRoomException ignored) { }
+            } catch (RemoteChatRoomException | IdentityOwnsRoomException ignored) { }
         }
     }
 
@@ -179,7 +197,6 @@ public class ClientConnection {
             this.identity.getCurrentRoom().leave(this.identity);
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
-            //TODO: remove rooms that are owned by this identity
         } catch (IOException e) {
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }

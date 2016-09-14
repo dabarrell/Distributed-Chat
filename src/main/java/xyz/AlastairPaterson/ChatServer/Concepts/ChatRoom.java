@@ -3,6 +3,7 @@ package xyz.AlastairPaterson.ChatServer.Concepts;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityOwnsRoomException;
 import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 import xyz.AlastairPaterson.ChatServer.StateManager;
@@ -74,7 +75,11 @@ public class ChatRoom {
         return ! this.ownerServer.getId().equals(StateManager.getInstance().getThisServerId());
     }
 
-    public void join(Identity identity) throws RemoteChatRoomException, IOException {
+    public void join(Identity identity) throws RemoteChatRoomException, IOException, IdentityOwnsRoomException {
+        if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
+            throw new IdentityOwnsRoomException();
+        }
+
         identity.getCurrentRoom().leave(identity, this);
 
         if (this.isForeignRoom()) {
@@ -123,8 +128,18 @@ public class ChatRoom {
         }
     }
 
-    public void destroy() {
-        throw new NotImplementedException();
+    public void destroy() throws IOException {
+        for (Identity identity : this.getMembers()) {
+            this.leave(identity, StateManager.getInstance().getMainhall());
+        }
+
+        RoomDelete deleteMessage = new RoomDelete();
+        deleteMessage.setServerId(StateManager.getInstance().getThisServerId());
+        deleteMessage.setRoomId(this.getRoomId());
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            coordinationServer.sendMessage(deleteMessage);
+        }
     }
 
     public void setOwner(Identity owner) {

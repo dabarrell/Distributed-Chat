@@ -11,6 +11,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
@@ -184,6 +185,10 @@ public class CoordinationServer {
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
                     break;
                 case "movejoin":
+                    //TODO: finish
+                    break;
+                case "deleteroom":
+                    processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
                     break;
             }
 
@@ -191,6 +196,10 @@ public class CoordinationServer {
         } catch (IOException e) {
             Logger.warn("IO exception occurred: {}", e.getMessage());
         }
+    }
+
+    private void processDeleteRoomRequest(RoomDelete roomDelete) {
+        StateManager.getInstance().getRooms().remove(StateManager.getInstance().getRoom(roomDelete.getRoomId()));
     }
 
     /**
