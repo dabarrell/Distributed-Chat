@@ -9,6 +9,11 @@ import xyz.AlastairPaterson.ChatServer.Messages.Identity.ServerChangeCoordinatio
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.MessageMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.*;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateClientRequest;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientRequest;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeRouteResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.*;

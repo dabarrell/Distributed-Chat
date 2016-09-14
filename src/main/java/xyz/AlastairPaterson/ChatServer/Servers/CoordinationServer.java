@@ -10,8 +10,8 @@ import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomCreateLockMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomReleaseLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;

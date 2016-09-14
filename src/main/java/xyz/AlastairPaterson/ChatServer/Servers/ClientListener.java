@@ -6,7 +6,7 @@ import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.*;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.RoomChangeClientResponse;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import java.io.IOException;

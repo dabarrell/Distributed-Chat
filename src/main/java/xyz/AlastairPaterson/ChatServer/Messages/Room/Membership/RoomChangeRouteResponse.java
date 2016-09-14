@@ -1,4 +1,4 @@
-package xyz.AlastairPaterson.ChatServer.Messages.Room;
+package xyz.AlastairPaterson.ChatServer.Messages.Room.Membership;
 
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;

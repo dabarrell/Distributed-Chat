@@ -1,4 +1,4 @@
-package xyz.AlastairPaterson.ChatServer.Messages.Room;
+package xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle;
 
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 
