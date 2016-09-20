@@ -18,14 +18,14 @@ public class RoomChangeClientResponse extends Message {
         super("roomchange");
 
         this.identity = identity;
-        this.former = from;
+        this.former = from == null ? "" : from;
         this.roomid = to;
     }
 
     public RoomChangeClientResponse(Identity identity, ChatRoom from, ChatRoom to) {
         super("roomchange");
         this.identity = identity.getScreenName();
-        this.former = from.getRoomId();
-        this.roomid = to.getRoomId();
+        this.former = from == null ? "" : from.getRoomId();
+        this.roomid = to == null ? "" : to.getRoomId();
     }
 }

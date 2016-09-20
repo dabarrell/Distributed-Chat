@@ -1,5 +1,7 @@
 package xyz.AlastairPaterson.ChatServer.Concepts;
 
+import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityOwnsRoomException;
+import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientConnection;
 import java.io.IOException;
 
@@ -7,10 +9,10 @@ import java.io.IOException;
  * Represents a user's identity on this server
  */
 public class Identity {
-    private String screenName;
+    private final String screenName;
     private ChatRoom currentRoom;
     private ChatRoom ownedRoom;
-    private ClientConnection connection;
+    private final ClientConnection connection;
 
     /**
      * Creates a new identity for a user
@@ -18,9 +20,13 @@ public class Identity {
      * @param screenName  The user's screen name
      * @param currentRoom The current room of the user
      */
-    public Identity(String screenName, ChatRoom currentRoom) throws IOException {
+    public Identity(String screenName, ChatRoom currentRoom, ClientConnection connection) throws IOException {
         this.screenName = screenName;
-        this.currentRoom = currentRoom;
+        this.connection = connection;
+        try {
+            currentRoom.join(this);
+        } catch (RemoteChatRoomException | IdentityOwnsRoomException ignore) { }
+        connection.finalizeConnection(this);
     }
 
     /**
@@ -30,10 +36,6 @@ public class Identity {
      */
     public String getScreenName() {
         return screenName;
-    }
-
-    public void setConnection(ClientConnection connection) {
-        this.connection = connection;
     }
 
     /**

@@ -62,7 +62,8 @@ public class CoordinationServer {
             socket = new ServerSocket(this.coordinationPort);
             connected = true;
 
-            StateManager.getInstance().getRooms().add(new ChatRoom("MainHall-" + id, "", this));
+            //FIXME: Not sure if this is the right place to do this?
+            StateManager.getInstance().getRooms().add(new ChatRoom("MainHall-" + id, this));
         } else {
             // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
@@ -217,7 +218,7 @@ public class CoordinationServer {
                     .findFirst()
                     .get();
 
-            StateManager.getInstance().getRooms().add(new ChatRoom(roomReleaseLockMessage.getRoomId(), null, owningServer));
+            StateManager.getInstance().getRooms().add(new ChatRoom(roomReleaseLockMessage.getRoomId(), owningServer));
         }
     }
 

@@ -15,6 +15,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMes
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientRequest;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeRouteResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
@@ -25,7 +26,7 @@ import java.net.Socket;
  * Represents a connection between the server and the client
  */
 public class ClientConnection {
-    private final Identity identity;
+    private Identity identity;
 
     private final Socket socket;
     private final InputStream inputStream;
@@ -36,12 +37,15 @@ public class ClientConnection {
     private final Gson jsonSerializer = new Gson();
 
 
-    ClientConnection(Socket socket, Identity identity) throws IOException {
-        this.identity = identity;
+    ClientConnection(Socket socket) throws IOException {
         this.socket = socket;
         this.inputStream = socket.getInputStream();
         this.outputStream = socket.getOutputStream();
         communicationThread = new Thread(this::communicate);
+    }
+
+    public void finalizeConnection(Identity identity) {
+        this.identity = identity;
         communicationThread.setName(this.identity.getScreenName() + "Communications");
         communicationThread.start();
     }
@@ -116,7 +120,7 @@ public class ClientConnection {
             this.sendMessage(new RoomChangeRouteResponse(destinationRoom));
             this.identity.getCurrentRoom().leave(this.identity, destinationRoom);
         } catch (IdentityOwnsRoomException e) {
-            e.printStackTrace();
+            this.sendMessage(new RoomChangeRouteResponse(this.identity.getCurrentRoom()));
         }
     }
 
@@ -171,10 +175,13 @@ public class ClientConnection {
             // RemoteChatRoomException can't occur if we're creating on this server
             try {
                 ChatRoom newRoom = StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid());
-                newRoom.setOwner(this.identity);
                 newRoom.join(this.identity);
+
+                newRoom.setOwnerId(this.identity.getScreenName());
                 this.identity.setOwnedRoom(newRoom);
-            } catch (RemoteChatRoomException | IdentityOwnsRoomException ignored) { }
+            } catch (RemoteChatRoomException | IdentityOwnsRoomException ignored) {
+                ignored.printStackTrace();
+            }
         }
     }
 

@@ -34,6 +34,12 @@ public class ChatRoom {
         this.ownerServer = ownerServer;
     }
 
+    public ChatRoom(String roomId, CoordinationServer ownerServer) {
+        this.roomId = roomId;
+        this.ownerServer = ownerServer;
+        this.ownerId = "";
+    }
+
     /**
      * Gets the chat room ID
      * @return The chat room ID
@@ -48,6 +54,15 @@ public class ChatRoom {
      */
     public String getOwnerId() {
         return ownerId;
+    }
+
+    /**
+     * Sets the owner ID
+     *
+     * @param ownerId The owner ID
+     */
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     /**
@@ -75,21 +90,33 @@ public class ChatRoom {
         return ! this.ownerServer.getId().equals(StateManager.getInstance().getThisServerId());
     }
 
+    /**
+     * Controls joining a room and leaving the previous room, if applicable
+     *
+     * @param identity The identity joining this room
+     * @throws RemoteChatRoomException If the server is remote, should be handled differently
+     * @throws IOException If IO exception occurs
+     * @throws IdentityOwnsRoomException If user already owns a room, can't join another one
+     */
     public void join(Identity identity) throws RemoteChatRoomException, IOException, IdentityOwnsRoomException {
         if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
             throw new IdentityOwnsRoomException();
         }
 
-        identity.getCurrentRoom().leave(identity, this);
+        if (identity.getCurrentRoom() != null) {
+            identity.getCurrentRoom().leave(identity, this);
+        }
 
         if (this.isForeignRoom()) {
             throw new RemoteChatRoomException(this);
         }
 
         this.getMembers().add(identity);
+
         RoomChangeClientResponse clientMessage = new RoomChangeClientResponse(identity, identity.getCurrentRoom(), this);
+
         this.broadcast(clientMessage);
-        identity.getCurrentRoom().broadcast(clientMessage);
+
         identity.setCurrentRoom(this);
     }
 
@@ -104,22 +131,29 @@ public class ChatRoom {
             this.destroy();
         }
         else {
-            RoomChangeClientResponse roomChange;
-            if (destination == null) {
-                roomChange = new RoomChangeClientResponse(identity.getScreenName(), this.getRoomId(), "");
-            }
-            else {
-                roomChange = new RoomChangeClientResponse(identity.getScreenName(), this.getRoomId(), destination.getRoomId());
-            }
+            RoomChangeClientResponse roomChange = new RoomChangeClientResponse(identity, this, destination);
 
             this.broadcast(roomChange);
         }
     }
 
+    /**
+     * Sends a message to all members of the group
+     *
+     * @param message The message being sent
+     * @throws IOException If an IO exception occurs
+     */
     public void broadcast(Message message) throws IOException {
         this.broadcast(message, null);
     }
 
+    /**
+     * Sends a message to all members of the group except the member specified
+     *
+     * @param message The message to be sent
+     * @param ignore The identity not to send the message to
+     * @throws IOException If an IO exception occurs
+     */
     public void broadcast(Message message, Identity ignore) throws IOException {
         for (Identity member : this.members) {
             if (!member.equals(ignore)) {
@@ -128,9 +162,16 @@ public class ChatRoom {
         }
     }
 
+    /**
+     * Destroys a chat room
+     *
+     * @throws IOException If an IO exception occurs
+     */
     public void destroy() throws IOException {
         for (Identity identity : this.getMembers()) {
-            this.leave(identity, StateManager.getInstance().getMainhall());
+            try {
+                StateManager.getInstance().getMainhall().join(identity);
+            } catch (RemoteChatRoomException | IdentityOwnsRoomException ignore) { }
         }
 
         RoomDelete deleteMessage = new RoomDelete();
@@ -140,9 +181,5 @@ public class ChatRoom {
         for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
             coordinationServer.sendMessage(deleteMessage);
         }
-    }
-
-    public void setOwner(Identity owner) {
-        this.ownerId = owner.getScreenName();
     }
 }

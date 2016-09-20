@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
+import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityOwnsRoomException;
+import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.*;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
@@ -90,6 +92,7 @@ public class ClientListener {
     }
 
     private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, Socket connection) {
+
     }
 
     private void processNewIdentity(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
@@ -103,10 +106,6 @@ public class ClientListener {
         SocketServices.writeToSocket(connection, jsonSerializer.toJson(new NewIdentityResponse(identityOk)));
 
         this.unlockIdentity(newIdentityRequest.getIdentity());
-
-        if (identityOk) {
-            this.broadcastNewUser(newIdentityRequest.getIdentity(), StateManager.getInstance().getMainhall());
-        }
     }
 
     private void broadcastNewUser(String identity, ChatRoom mainhall) throws IOException {
@@ -123,14 +122,11 @@ public class ClientListener {
     private void createValidClient(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
         ChatRoom mainHall = StateManager.getInstance().getMainhall();
 
-        Identity newIdentity = new Identity(newIdentityRequest.getIdentity(), mainHall);
+        ClientConnection newClientConnection = new ClientConnection(connection);
 
-        ClientConnection newClientConnection = new ClientConnection(connection, newIdentity);
-        newIdentity.setConnection(newClientConnection);
+        Identity newIdentity = new Identity(newIdentityRequest.getIdentity(), mainHall, newClientConnection);
 
         StateManager.getInstance().getHostedIdentities().add(newIdentity);
-
-        mainHall.getMembers().add(newIdentity);
     }
 
     private boolean validateIdentity(String identity) throws IOException {
