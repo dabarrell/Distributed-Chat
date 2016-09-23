@@ -20,19 +20,11 @@ public class ChatRoom {
 
     private String ownerId;
 
+    private Identity owner;
+
     private final CoordinationServer ownerServer;
 
     private final List<Identity> members = new ArrayList<>();
-
-    /**
-     * Creates a new chat room with the specified ID
-     * @param roomId The ID of the room
-     */
-    public ChatRoom(String roomId, String ownerId, CoordinationServer ownerServer) {
-        this.roomId = roomId;
-        this.ownerId = ownerId;
-        this.ownerServer = ownerServer;
-    }
 
     public ChatRoom(String roomId, CoordinationServer ownerServer) {
         this.roomId = roomId;
@@ -57,12 +49,13 @@ public class ChatRoom {
     }
 
     /**
-     * Sets the owner ID
+     * Sets the owner
      *
-     * @param ownerId The owner ID
+     * @param owner The owner
      */
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
+    public void setOwner(Identity owner) {
+        this.ownerId = owner.getScreenName();
+        this.owner = owner;
     }
 
     /**
@@ -125,7 +118,6 @@ public class ChatRoom {
     }
 
     public void leave(Identity identity, ChatRoom destination) throws IOException {
-        this.getMembers().remove(identity);
 
         if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
             this.destroy();
@@ -135,6 +127,8 @@ public class ChatRoom {
 
             this.broadcast(roomChange);
         }
+
+        this.getMembers().remove(identity);
     }
 
     /**
@@ -168,12 +162,15 @@ public class ChatRoom {
      * @throws IOException If an IO exception occurs
      */
     public void destroy() throws IOException {
+        owner.setOwnedRoom(null);
+        this.ownerId = "";
+
         for (Identity identity : this.getMembers()) {
             try {
                 StateManager.getInstance().getMainhall().join(identity);
             } catch (RemoteChatRoomException | IdentityOwnsRoomException ignore) { }
         }
-
+//TODO: Make this fucker work - people who aren't the owner remain in the group
         RoomDelete deleteMessage = new RoomDelete();
         deleteMessage.setServerId(StateManager.getInstance().getThisServerId());
         deleteMessage.setRoomId(this.getRoomId());

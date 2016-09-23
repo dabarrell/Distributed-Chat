@@ -183,7 +183,7 @@ public class ClientConnection {
                 ChatRoom newRoom = StateManager.getInstance().getRoom(roomCreateClientRequest.getRoomid());
                 newRoom.join(this.identity);
 
-                newRoom.setOwnerId(this.identity.getScreenName());
+                newRoom.setOwner(this.identity);
                 this.identity.setOwnedRoom(newRoom);
             } catch (RemoteChatRoomException | IdentityOwnsRoomException ignored) {
                 ignored.printStackTrace();
