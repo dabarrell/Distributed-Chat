@@ -63,7 +63,9 @@ public class CoordinationServer {
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
-            StateManager.getInstance().getRooms().add(new ChatRoom("MainHall-" + id, this));
+            ChatRoom mainHall = new ChatRoom("MainHall-" + id, this);
+            StateManager.getInstance().getRooms().add(mainHall);
+            StateManager.getInstance().setMainHall(mainHall);
         } else {
             // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
@@ -184,9 +186,6 @@ public class CoordinationServer {
                     break;
                 case "releaseroomid":
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
-                    break;
-                case "movejoin":
-                    //TODO: finish
                     break;
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));

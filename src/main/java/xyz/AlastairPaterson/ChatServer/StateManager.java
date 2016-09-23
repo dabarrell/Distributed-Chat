@@ -34,6 +34,8 @@ public class StateManager {
 
     private final List<CoordinationServer> servers = new LinkedList<>();
 
+    private ChatRoom mainHall;
+
     private String thisServerId;
 
     private StateManager() { }
@@ -151,13 +153,13 @@ public class StateManager {
      * Finds a ChatRoom by ID
      *
      * @param roomId The chat room ID being requested
-     * @return The chat room, or null if it doesn't exist
+     * @return The chat room, or the MainHall if it doesn't exist
      */
     public ChatRoom getRoom(String roomId) {
         return hostedRooms.stream()
                 .filter(x -> x.getRoomId().equalsIgnoreCase(roomId))
                 .findFirst()
-                .get();
+                .orElse(this.getMainhall());
     }
 
     /**
@@ -175,6 +177,10 @@ public class StateManager {
      * @return The MainHall room for this server
      */
     public ChatRoom getMainhall() {
-        return this.getRoom("MainHall-" + this.getThisServerId());
+        return this.mainHall;
+    }
+
+    public void setMainHall(ChatRoom mainHall) {
+        this.mainHall = mainHall;
     }
 }
