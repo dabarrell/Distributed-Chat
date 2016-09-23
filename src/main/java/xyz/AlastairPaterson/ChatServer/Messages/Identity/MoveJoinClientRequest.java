@@ -13,4 +13,12 @@ public class MoveJoinClientRequest extends Message {
     public MoveJoinClientRequest() {
         super("movejoin");
     }
+
+    public String getIdentity() {
+        return identity;
+    }
+
+    public String getRoomId() {
+        return roomid;
+    }
 }

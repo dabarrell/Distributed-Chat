@@ -86,13 +86,18 @@ public class ClientListener {
         switch(clientMessage.getType()) {
             case "newidentity":
                 this.processNewIdentity(jsonSerializer.fromJson(clientRequest, NewIdentityRequest.class), connection);
+                break;
             case "movejoin":
                 this.processMoveIdentity(jsonSerializer.fromJson(clientRequest, MoveJoinClientRequest.class), connection);
+                break;
         }
     }
 
-    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, Socket connection) {
+    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, Socket connection) throws IOException {
+        ChatRoom destination = StateManager.getInstance().getRoom(moveJoinClientRequest.getRoomId());
+        SocketServices.writeToSocket(connection, jsonSerializer.toJson(new ServerChangeAcknowledgement()));
 
+        this.createValidClient(moveJoinClientRequest.getIdentity(), connection, destination);
     }
 
     private void processNewIdentity(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
@@ -100,12 +105,20 @@ public class ClientListener {
 
         if (identityOk) {
             Logger.info("Identity OK - continuing");
-            createValidClient(newIdentityRequest, connection);
+            createValidClient(newIdentityRequest.getIdentity(), connection, StateManager.getInstance().getMainhall());
         }
 
         SocketServices.writeToSocket(connection, jsonSerializer.toJson(new NewIdentityResponse(identityOk)));
 
         this.unlockIdentity(newIdentityRequest.getIdentity());
+    }
+
+    private void createValidClient(String identity, Socket connection, ChatRoom room) throws IOException {
+        ClientConnection newClientConnection = new ClientConnection(connection);
+
+        Identity newIdentity = new Identity(identity, room, newClientConnection);
+
+        StateManager.getInstance().getHostedIdentities().add(newIdentity);
     }
 
     private void broadcastNewUser(String identity, ChatRoom mainhall) throws IOException {
@@ -117,16 +130,6 @@ public class ClientListener {
         for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
             coordinationServer.sendMessage(unlockMessage);
         }
-    }
-
-    private void createValidClient(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
-        ChatRoom mainHall = StateManager.getInstance().getMainhall();
-
-        ClientConnection newClientConnection = new ClientConnection(connection);
-
-        Identity newIdentity = new Identity(newIdentityRequest.getIdentity(), mainHall, newClientConnection);
-
-        StateManager.getInstance().getHostedIdentities().add(newIdentity);
     }
 
     private boolean validateIdentity(String identity) throws IOException {

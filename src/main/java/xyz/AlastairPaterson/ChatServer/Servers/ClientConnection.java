@@ -15,7 +15,6 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMes
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientRequest;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeRouteResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
@@ -36,6 +35,8 @@ public class ClientConnection {
 
     private final Gson jsonSerializer = new Gson();
 
+    private boolean shouldRun = true;
+    private boolean noQuit = false;
 
     ClientConnection(Socket socket) throws IOException {
         this.socket = socket;
@@ -54,9 +55,8 @@ public class ClientConnection {
      * Runs client communications
      */
     private void communicate() {
-        boolean shouldRun = true;
         try {
-            while (shouldRun && this.socket.isConnected() && !this.communicationThread.isInterrupted()) {
+            while (this.shouldRun && this.socket.isConnected() && !this.communicationThread.isInterrupted()) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(this.inputStream));
 
                 String inputString = reader.readLine();
@@ -91,7 +91,9 @@ public class ClientConnection {
             Logger.error("IOException occurred during client communication - terminating client");
         }
         finally {
-            this.processQuit();
+            if (!this.noQuit) {
+                this.processQuit();
+            }
         }
     }
 
@@ -119,6 +121,10 @@ public class ClientConnection {
             destinationRoom.getOwnerServer().sendMessage(new ServerChangeCoordinationMessage(this.identity.getCurrentRoom(), destinationRoom, this.identity));
             this.sendMessage(new RoomChangeRouteResponse(destinationRoom));
             this.identity.getCurrentRoom().leave(this.identity, destinationRoom);
+            StateManager.getInstance().getHostedIdentities().remove(this);
+
+            this.shouldRun = false;
+            this.noQuit = true;
         } catch (IdentityOwnsRoomException e) {
             this.sendMessage(new RoomChangeRouteResponse(this.identity.getCurrentRoom()));
         }
