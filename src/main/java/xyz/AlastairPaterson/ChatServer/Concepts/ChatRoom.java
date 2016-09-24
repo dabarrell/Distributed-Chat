@@ -1,5 +1,6 @@
 package xyz.AlastairPaterson.ChatServer.Concepts;
 
+import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityOwnsRoomException;
 import xyz.AlastairPaterson.ChatServer.Exceptions.RemoteChatRoomException;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
@@ -104,7 +105,7 @@ public class ChatRoom {
             throw new RemoteChatRoomException(this);
         }
 
-        this.getMembers().add(identity);
+        this.members.add(identity);
 
         RoomChangeClientResponse clientMessage = new RoomChangeClientResponse(identity, identity.getCurrentRoom(), this);
 
@@ -162,15 +163,17 @@ public class ChatRoom {
      * @throws IOException If an IO exception occurs
      */
     public void destroy() throws IOException {
+        Logger.debug("Destroying room");
         owner.setOwnedRoom(null);
         this.ownerId = "";
 
-        for (Identity identity : this.getMembers()) {
+        // Pro tip - don't modify an array in Java while iterating over it
+        while (this.members.size() != 0) {
             try {
-                StateManager.getInstance().getMainhall().join(identity);
+                StateManager.getInstance().getMainhall().join(this.members.get(0));
             } catch (RemoteChatRoomException | IdentityOwnsRoomException ignore) { }
         }
-//TODO: Make this fucker work - people who aren't the owner remain in the group
+
         RoomDelete deleteMessage = new RoomDelete();
         deleteMessage.setServerId(StateManager.getInstance().getThisServerId());
         deleteMessage.setRoomId(this.getRoomId());
