@@ -86,13 +86,18 @@ public class ClientConnection {
                     case "deleteroom":
                         this.processDeleteRoom(jsonSerializer.fromJson(inputString, RoomDelete.class));
                         break;
+                    default:
+                        Logger.warn("Unrecognized command: " + messageType);
+                        break;
                 }
             }
+            Logger.debug("Coms loop exited - cleaning up");
         } catch (IOException e) {
             Logger.error("IOException occurred during client communication - terminating client");
         }
         finally {
             if (!this.noQuit) {
+                Logger.debug("Processing quit");
                 this.processQuit();
             }
         }
@@ -209,6 +214,9 @@ public class ClientConnection {
     private void processQuit() {
         try {
             this.identity.getCurrentRoom().leave(this.identity);
+            if (this.identity.getCurrentRoom() != null) {
+                this.identity.getCurrentRoom().leave(this.identity);
+            }
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
         } catch (IOException e) {
@@ -218,8 +226,8 @@ public class ClientConnection {
         try {
             this.sendMessage(new RoomChangeClientResponse(this.identity, this.identity.getCurrentRoom(), null));
             communicationThread.interrupt();
-            this.socket.shutdownInput();
-            this.socket.shutdownOutput();
+            //this.socket.shutdownInput();
+            //this.socket.shutdownOutput();
             this.socket.close();
         } catch (IOException e) {
             Logger.warn("IO exception occurred during client disconnect");

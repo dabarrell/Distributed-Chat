@@ -45,31 +45,11 @@ public class ClientListener {
     private void runServer() {
         while(true) {
             try {
-                Thread runnerThread = new Thread(this::processConnection);
-                runnerThread.setName("ClientRunner");
-                runnerThread.start();
+                Socket socket = listener.accept();
 
-                incomingConnections.add(listener.accept());
+                this.establishClient(socket);
             } catch (IOException e) {
-                Logger.warn("An IO exception occurred: {}", e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * Processes incoming connections from clients
-     */
-    private void processConnection() {
-        Socket connection;
-
-        while (!listener.isClosed()) {
-            try {
-                connection = incomingConnections.take();
-
-                this.establishClient(connection);
-
-            } catch (IOException | InterruptedException e) {
-                //TODO: disconnect the client
+                StateManager test = StateManager.getInstance();
                 e.printStackTrace();
             }
         }
