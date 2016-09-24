@@ -15,6 +15,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMes
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientRequest;
+import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeRouteResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
@@ -215,7 +216,7 @@ public class ClientConnection {
         }
 
         try {
-            this.sendMessage(null);
+            this.sendMessage(new RoomChangeClientResponse(this.identity, this.identity.getCurrentRoom(), null));
             communicationThread.interrupt();
             this.socket.shutdownInput();
             this.socket.shutdownOutput();
