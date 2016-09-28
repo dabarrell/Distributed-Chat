@@ -15,6 +15,8 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -33,7 +35,7 @@ public class CoordinationServer {
 
     private final int clientPort;
 
-    private ServerSocket socket;
+    private SSLServerSocket socket;
 
     private final Gson jsonSerializer = new Gson();
 
@@ -47,7 +49,7 @@ public class CoordinationServer {
      * @param localInstance    If this is a locally running server
      * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws IOException {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws Exception {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
@@ -59,7 +61,7 @@ public class CoordinationServer {
             // Start server
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
-            socket = new ServerSocket(this.coordinationPort);
+            socket = SocketServices.buildServerSocket(this.coordinationPort);
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
@@ -119,9 +121,16 @@ public class CoordinationServer {
      * @throws IOException Thrown if reading or writing fails
      */
     public String sendMessage(Message message) throws IOException {
-        Socket remoteServer = new Socket(this.hostname, this.coordinationPort);
-        SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
-        return SocketServices.readFromSocket(remoteServer);
+        try {
+            SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+            SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
+            return SocketServices.readFromSocket(remoteServer);
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Logger.error("SendMessage exception: {}", ex.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -151,7 +160,7 @@ public class CoordinationServer {
     private void runServer() {
         while (true) {
             try {
-                Socket newConnection = socket.accept();
+                SSLSocket newConnection = (SSLSocket)socket.accept();
 
                 //TODO: move to different thread?
                 this.processCommand(newConnection);
@@ -166,7 +175,7 @@ public class CoordinationServer {
      *
      * @param client The connection received
      */
-    private void processCommand(Socket client) {
+    private void processCommand(SSLSocket client) {
         try {
             String receivedData = SocketServices.readFromSocket(client);
 

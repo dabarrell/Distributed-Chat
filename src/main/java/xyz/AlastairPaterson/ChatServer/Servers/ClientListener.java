@@ -11,6 +11,8 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Membership.RoomChangeClientResponse;
 import xyz.AlastairPaterson.ChatServer.StateManager;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,7 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Listens to and processes client requests
  */
 public class ClientListener {
-    private ServerSocket listener;
+    private SSLServerSocket listener;
 
     private final Gson jsonSerializer = new Gson();
 
@@ -31,8 +33,8 @@ public class ClientListener {
      * @param port The port the ClientListener will bind to
      * @throws IOException If any thread operations fail
      */
-    public ClientListener(int port) throws IOException {
-        listener = new ServerSocket(port);
+    public ClientListener(int port) throws Exception {
+        listener = SocketServices.buildServerSocket(port);
 
         Thread listenerThread = new Thread(this::runServer);
         listenerThread.setName("ClientListener");
@@ -45,17 +47,16 @@ public class ClientListener {
     private void runServer() {
         while(true) {
             try {
-                Socket socket = listener.accept();
+                SSLSocket socket = (SSLSocket)listener.accept();
 
                 this.establishClient(socket);
             } catch (IOException e) {
-                StateManager test = StateManager.getInstance();
                 e.printStackTrace();
             }
         }
     }
 
-    private void establishClient(Socket connection) throws IOException {
+    private void establishClient(SSLSocket connection) throws IOException {
         String clientRequest = SocketServices.readFromSocket(connection);
         Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
 
@@ -73,14 +74,14 @@ public class ClientListener {
         }
     }
 
-    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, Socket connection) throws IOException {
+    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, SSLSocket connection) throws IOException {
         ChatRoom destination = StateManager.getInstance().getRoom(moveJoinClientRequest.getRoomId());
         SocketServices.writeToSocket(connection, jsonSerializer.toJson(new ServerChangeAcknowledgement()));
 
         this.createValidClient(moveJoinClientRequest.getIdentity(), connection, destination);
     }
 
-    private void processNewIdentity(NewIdentityRequest newIdentityRequest, Socket connection) throws IOException {
+    private void processNewIdentity(NewIdentityRequest newIdentityRequest, SSLSocket connection) throws IOException {
         boolean identityOk = this.validateIdentity(newIdentityRequest.getIdentity());
 
         if (identityOk) {
