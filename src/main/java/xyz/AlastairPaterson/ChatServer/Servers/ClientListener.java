@@ -50,13 +50,13 @@ public class ClientListener {
                 SSLSocket socket = (SSLSocket)listener.accept();
 
                 this.establishClient(socket);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void establishClient(SSLSocket connection) throws IOException {
+    private void establishClient(SSLSocket connection) throws Exception {
         String clientRequest = SocketServices.readFromSocket(connection);
         Message clientMessage = jsonSerializer.fromJson(clientRequest, Message.class);
 
@@ -74,14 +74,14 @@ public class ClientListener {
         }
     }
 
-    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, SSLSocket connection) throws IOException {
+    private void processMoveIdentity(MoveJoinClientRequest moveJoinClientRequest, SSLSocket connection) throws Exception {
         ChatRoom destination = StateManager.getInstance().getRoom(moveJoinClientRequest.getRoomId());
         SocketServices.writeToSocket(connection, jsonSerializer.toJson(new ServerChangeAcknowledgement()));
 
         this.createValidClient(moveJoinClientRequest.getIdentity(), connection, destination);
     }
 
-    private void processNewIdentity(NewIdentityRequest newIdentityRequest, SSLSocket connection) throws IOException {
+    private void processNewIdentity(NewIdentityRequest newIdentityRequest, SSLSocket connection) throws Exception {
         boolean identityOk = this.validateIdentity(newIdentityRequest.getIdentity());
 
         if (identityOk) {
@@ -94,7 +94,7 @@ public class ClientListener {
         this.unlockIdentity(newIdentityRequest.getIdentity());
     }
 
-    private void createValidClient(String identity, Socket connection, ChatRoom room) throws IOException {
+    private void createValidClient(String identity, Socket connection, ChatRoom room) throws Exception {
         ClientConnection newClientConnection = new ClientConnection(connection);
 
         Identity newIdentity = new Identity(identity, room, newClientConnection);
@@ -106,14 +106,14 @@ public class ClientListener {
         mainhall.broadcast(new RoomChangeClientResponse(identity, "", mainhall.getRoomId()));
     }
 
-    private void unlockIdentity(String identity) throws IOException {
+    private void unlockIdentity(String identity) throws Exception {
         IdentityUnlockMessage unlockMessage = new IdentityUnlockMessage(identity);
         for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
             coordinationServer.sendMessage(unlockMessage);
         }
     }
 
-    private boolean validateIdentity(String identity) throws IOException {
+    private boolean validateIdentity(String identity) throws Exception {
         if (identity.length() < 3 || identity.length() > 16) {
             return false;
         }

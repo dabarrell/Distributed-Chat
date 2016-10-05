@@ -20,7 +20,7 @@ public class Identity {
      * @param screenName  The user's screen name
      * @param currentRoom The current room of the user
      */
-    public Identity(String screenName, ChatRoom currentRoom, ClientConnection connection) throws IOException {
+    public Identity(String screenName, ChatRoom currentRoom, ClientConnection connection) throws Exception {
         this.screenName = screenName;
         this.connection = connection;
         try {

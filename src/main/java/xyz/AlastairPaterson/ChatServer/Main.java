@@ -8,7 +8,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.pmw.tinylog.Configurator;
 import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
-import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
@@ -44,6 +43,8 @@ public class Main {
 
         StateManager.getInstance().setThisServerId(arguments.getString("name"));
 
+        configureSSL();
+
         try {
             processServers(readConfiguration(arguments.get("l")));
         } catch (Exception ex) {
@@ -52,6 +53,24 @@ public class Main {
         }
 
         Logger.info("Chat server now available");
+    }
+
+    private static void configureSSL() {
+        //Security.addProvider(new Provider());
+
+        //Specifying the Keystore details
+        Logger.debug("Reading keystore at {}", System.getProperty("user.dir") + "/keystore.ks");
+        if (!new File(System.getProperty("user.dir") + "/keystore.ks").exists()) {
+            Logger.error("Could not find keystore.ks at {}. Check file exists and create if required", System.getProperty("user.dir"));
+            System.exit(1);
+        }
+
+        System.setProperty("javax.net.ssl.keyStore", System.getProperty("user.dir") + "/keystore.ks");
+        System.setProperty("javax.net.ssl.keyStorePassword","comp90015");
+
+        // Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
+        // System.setProperty("javax.net.debug","all");
+
     }
 
     /**
@@ -149,7 +168,7 @@ public class Main {
         Logger.debug("Finished config processing");
     }
 
-    private static void informServersOfMainHall() throws IOException {
+    private static void informServersOfMainHall() throws Exception {
         String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
         RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
         RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);

@@ -18,6 +18,7 @@ import xyz.AlastairPaterson.ChatServer.StateManager;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -120,17 +121,10 @@ public class CoordinationServer {
      * @return A JSON-encoded string with the result
      * @throws IOException Thrown if reading or writing fails
      */
-    public String sendMessage(Message message) throws IOException {
-        try {
-            SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
-            SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
-            return SocketServices.readFromSocket(remoteServer);
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            Logger.error("SendMessage exception: {}", ex.getMessage());
-        }
-        return null;
+    public String sendMessage(Message message) throws Exception {
+        SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+        SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
+        return SocketServices.readFromSocket(remoteServer);
     }
 
     /**
@@ -141,13 +135,15 @@ public class CoordinationServer {
             try {
                 this.sendMessage(new HelloMessage());
                 break;
-            } catch (IOException e) {
+            } catch (ConnectException e) {
                 Logger.debug("Couldn't reach {} - error {}", this.id, e.getMessage());
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException ex) {
                     Logger.error("Interrupted! {} {}", ex.getMessage(), ex.getStackTrace());
                 }
+            } catch (Exception e) {
+                Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
             }
         }
         Logger.debug("Validated connectivity to {}", this.id);
