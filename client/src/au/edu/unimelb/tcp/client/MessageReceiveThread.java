@@ -4,16 +4,18 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.Socket;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 public class MessageReceiveThread implements Runnable {
 
-	private Socket socket;
+	private SSLSocket socket;
 	private State state;
 	private boolean debug;
 
@@ -25,7 +27,7 @@ public class MessageReceiveThread implements Runnable {
 	
 	private MessageSendThread messageSendThread;
 
-	public MessageReceiveThread(Socket socket, State state, MessageSendThread messageSendThread, boolean debug) throws IOException {
+	public MessageReceiveThread(SSLSocket socket, State state, MessageSendThread messageSendThread, boolean debug) throws IOException {
 		this.socket = socket;
 		this.state = state;
 		this.messageSendThread = messageSendThread;
@@ -60,7 +62,7 @@ public class MessageReceiveThread implements Runnable {
 
 	}
 
-	public void MessageReceive(Socket socket, JSONObject message)
+	public void MessageReceive(SSLSocket socket, JSONObject message)
 			throws IOException, ParseException {
 		String type = (String) message.get("type");
 		
@@ -197,8 +199,10 @@ public class MessageReceiveThread implements Runnable {
 				System.out.println("Connecting to server " + host + ":" + port);
 				System.out.print("[" + state.getRoomId() + "] " + state.getIdentity() + "> ");
 			}
-			
-			Socket temp_socket = new Socket(host, port);
+
+			SSLSocketFactory factory = (SSLSocketFactory)SSLSocketFactory.getDefault();
+
+			SSLSocket temp_socket = (SSLSocket)factory.createSocket(host, port);
 			
 			// send #movejoin
 			DataOutputStream out = new DataOutputStream(temp_socket.getOutputStream());
@@ -243,7 +247,7 @@ public class MessageReceiveThread implements Runnable {
 		}
 	}
 	
-	public void switchServer(Socket temp_socket, BufferedReader temp_in) throws IOException {
+	public void switchServer(SSLSocket temp_socket, BufferedReader temp_in) throws IOException {
 		in.close();
 		in = temp_in;
 		socket.close();

@@ -7,9 +7,11 @@ import java.util.Scanner;
 
 import org.json.simple.JSONObject;
 
+import javax.net.ssl.SSLSocket;
+
 public class MessageSendThread implements Runnable {
 
-	private Socket socket;
+	private SSLSocket socket;
 
 	private DataOutputStream out;
 	
@@ -20,7 +22,7 @@ public class MessageSendThread implements Runnable {
 	// reading from console
 	private Scanner cmdin = new Scanner(System.in);
 
-	public MessageSendThread(Socket socket, State state, boolean debug) throws IOException {
+	public MessageSendThread(SSLSocket socket, State state, boolean debug) throws IOException {
 		this.socket = socket;
 		this.state = state;
 		out = new DataOutputStream(socket.getOutputStream());
@@ -115,7 +117,7 @@ public class MessageSendThread implements Runnable {
 		
 	}
 
-	public void switchServer(Socket temp_socket, DataOutputStream temp_out) throws IOException {
+	public void switchServer(SSLSocket temp_socket, DataOutputStream temp_out) throws IOException {
 		// switch server initiated by the receiving thread
 		// need to use synchronize
 		synchronized(out) {
