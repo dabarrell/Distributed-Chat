@@ -67,6 +67,7 @@ public class Main {
 
         System.setProperty("javax.net.ssl.keyStore", System.getProperty("user.dir") + "/keystore.ks");
         System.setProperty("javax.net.ssl.keyStorePassword","comp90015");
+        System.setProperty("javax.net.ssl.trustStore", System.getProperty("user.dir") + "/cacerts.jks");
 
         // Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
         // System.setProperty("javax.net.debug","all");
