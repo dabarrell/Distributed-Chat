@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component jdk="1.8" jdk_type="JavaSDK">
+	<exclude-output/>
+	<contentEntry url="file://$MODULE_DIR$"/>
+	<lib name="json_simple-1.1.jar" scope="COMPILE">
+		<relative-module-cls project-related="jar://$PROJECT_DIR$/lib/json_simple-1.1.jar!/"/>
+	</lib>
+	<lib name="args4j-2.0.21.jar" scope="COMPILE">
+		<relative-module-cls project-related="jar://$PROJECT_DIR$/lib/args4j-2.0.21.jar!/"/>
+	</lib>
+</component>
