@@ -82,7 +82,7 @@ git clone git@github.com:alastairpat/COMP90015-A1.git
 cd COMP90015-A1
 
 # Temporary checkout
-git checkout authentication
+git checkout mihira/authentication
 
 # execute server
 killall java

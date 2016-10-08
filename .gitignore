@@ -36,6 +36,12 @@ client/classes/**
 /out/
 /target/
 
+#client
+client/target
+
+#log
+log.txt
+
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
