@@ -216,7 +216,6 @@ public class Main {
          File registered_user_file = new File("registered_users.txt");
          CSVParser parser = CSVParser.parse(registered_user_file, Charset.defaultCharset(), CSVFormat.DEFAULT);
          for (CSVRecord csvRecord : parser) {
-           Logger.info("Adding user {}", csvRecord.get(0));
            StateManager.getInstance().addRegisteredUser(csvRecord.get(0));
         }
       }

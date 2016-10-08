@@ -9,6 +9,7 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUser;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
@@ -192,6 +193,9 @@ public class CoordinationServer {
                 case "releaseroomid":
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
                     break;
+                case "addRegisteredUser":
+                    processAddRegisteredUser(jsonSerializer.fromJson(receivedData, AddRegisteredUser.class));
+                    break;
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
                     break;
@@ -205,6 +209,13 @@ public class CoordinationServer {
 
     private void processDeleteRoomRequest(RoomDelete roomDelete) {
         StateManager.getInstance().getRooms().remove(StateManager.getInstance().getRoom(roomDelete.getRoomId()));
+    }
+
+    /**
+     *
+     */
+    private void processAddRegisteredUser(AddRegisteredUser message){
+        StateManager.getInstance().addRegisteredUser(message.getIdentity());
     }
 
     /**

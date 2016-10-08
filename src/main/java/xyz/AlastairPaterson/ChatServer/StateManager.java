@@ -6,6 +6,7 @@ import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
+import org.pmw.tinylog.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -194,6 +195,9 @@ public class StateManager {
     /* Setters */
 
     public void addRegisteredUser(String name) {
+      if(!isUserRegistered(name)){
+        Logger.info("Adding user {} to registered user list", name);
         this.registeredUsers.put(name, true);
+      }
     }
 }

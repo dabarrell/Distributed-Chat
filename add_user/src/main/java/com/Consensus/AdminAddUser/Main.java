@@ -159,7 +159,7 @@ public class Main {
      */
     private static String addMessage(String id){
       JSONObject object = new JSONObject();
-      object.put("type", "addMessage");
+      object.put("type", "addRegisteredUser");
       object.put("identity", id);
       return (object.toString() + "\n");
     }
