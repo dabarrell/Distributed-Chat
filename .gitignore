@@ -39,6 +39,9 @@ client/classes/**
 #client
 client/target
 
+#adduser
+add_user/target
+
 #log
 log.txt
 
