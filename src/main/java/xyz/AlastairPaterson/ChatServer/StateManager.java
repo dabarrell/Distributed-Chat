@@ -187,6 +187,10 @@ public class StateManager {
         this.mainHall = mainHall;
     }
 
+    public boolean isUserRegistered(String userName){
+      return this.registeredUsers.containsKey(userName);
+    }
+
     /* Setters */
 
     public void addRegisteredUser(String name) {
