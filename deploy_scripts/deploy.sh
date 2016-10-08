@@ -8,7 +8,7 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-if [ $(which java | grep -c ) -eq 0 ]; then
+if [ $(which java | grep java -c ) -eq 0 ]; then
   sudo add-apt-repository ppa:webupd8team/java
   sudo apt-get update --force-yes --yes
   echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
@@ -79,10 +79,13 @@ if [ ! -n "$(grep "^github.com " ~/.ssh/known_hosts)" ]; then ssh-keyscan github
 # Clone repo
 if [ -e COMP90015-A1 ]; then rm -rf COMP90015-A1 ; fi
 git clone git@github.com:alastairpat/COMP90015-A1.git
+cd COMP90015-A1
+
+# Temporary checkout
+git checkout authentication
 
 # execute server
 killall java
-cd COMP90015-A1
-nohup run_deamon.sh &
+nohup ./run_deamon.sh &
 echo "Server started "
 exit 0
