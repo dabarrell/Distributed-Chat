@@ -10,6 +10,7 @@ import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.HashMap;
 
 /**
  * Manages the coordination server's state
@@ -33,6 +34,8 @@ public class StateManager {
     private final List<EntityLock> lockedEntities = new LinkedList<>();
 
     private final List<CoordinationServer> servers = new LinkedList<>();
+
+    private final HashMap<String, Boolean> registeredUsers = new HashMap<>();
 
     private ChatRoom mainHall;
 
@@ -182,5 +185,11 @@ public class StateManager {
 
     public void setMainHall(ChatRoom mainHall) {
         this.mainHall = mainHall;
+    }
+
+    /* Setters */
+
+    public void addRegisteredUser(String name) {
+        this.registeredUsers.put(name, true);
     }
 }

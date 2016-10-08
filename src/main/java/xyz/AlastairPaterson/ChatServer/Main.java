@@ -8,6 +8,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.pmw.tinylog.Configurator;
 import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
+import org.apache.commons.csv.*;
+import java.nio.charset.Charset;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
@@ -27,6 +29,8 @@ public class Main {
      */
     public static void main(String[] args) {
         ArgumentParser parser = configureArgumentParser();
+        parseRegisteredUsers();
+
 
         Namespace arguments = null;
         try {
@@ -202,4 +206,24 @@ public class Main {
             Thread.sleep(3000);
         }
     }
+
+    /**
+     * Parses the registed users
+     */
+    private static void parseRegisteredUsers() {
+
+      try{
+         File registered_user_file = new File("registered_users.txt");
+         CSVParser parser = CSVParser.parse(registered_user_file, Charset.defaultCharset(), CSVFormat.DEFAULT);
+         for (CSVRecord csvRecord : parser) {
+           Logger.info("Adding user {}", csvRecord.get(0));
+           StateManager.getInstance().addRegisteredUser(csvRecord.get(0));
+        }
+      }
+      catch(IOException e) {
+        System.out.println("Error while reading CSV : "+e.getMessage());
+      }
+
+    }
+
 }
