@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.stream.Collectors;
 
 /**
  * Coordinates client actions between servers
@@ -220,7 +221,8 @@ public class CoordinationServer {
       if ( StateManager.getInstance().addRegisteredUser(message.getIdentity()) ){
         // User didn't exist and was added
         try{
-          for(CoordinationServer server : StateManager.getInstance().getServers()) {
+          for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+              .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
             server.sendMessage(message);
           }
         }catch( Exception e ){
