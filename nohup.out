@@ -1,0 +1,34 @@
+2016-10-09 14:19:51 [main] xyz.AlastairPaterson.ChatServer.StateManager.addRegisteredUser()
+INFO: Adding user test to registered user list
+2016-10-09 14:19:51 [main] xyz.AlastairPaterson.ChatServer.StateManager.addRegisteredUser()
+INFO: Adding user mihira to registered user list
+2016-10-09 14:19:51 [main] xyz.AlastairPaterson.ChatServer.Main.configureSSL()
+DEBUG: Reading keystore at /home/mihira/c/COMP90015-A1/keystore.ks
+2016-10-09 14:19:51 [main] xyz.AlastairPaterson.ChatServer.Main.processServers()
+DEBUG: Beginning config processing
+2016-10-09 14:19:51 [main] xyz.AlastairPaterson.ChatServer.Main.processServers()
+DEBUG: Adding config: mihiraNectar	115.146.95.8	19999	19998
+2016-10-09 14:19:52 [main] xyz.AlastairPaterson.ChatServer.Main.processServers()
+DEBUG: Adding config: mihira2Nectar	115.146.89.86	19999	19998
+2016-10-09 14:19:52 [main] xyz.AlastairPaterson.ChatServer.Main.processServers()
+DEBUG: Config loaded, validating connectivity
+2016-10-09 14:19:52 [mihiraNectarCoordinationValidator] xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer.sendMessage()
+DEBUG: Sending message xyz.AlastairPaterson.ChatServer.Messages.HelloMessage@23bc9a42 to 115.146.95.8 on port 19998
+2016-10-09 14:19:52 [mihiraNectarCoordinationValidator] xyz.AlastairPaterson.ChatServer.Servers.SocketServices.writeToSocket()
+DEBUG: Writing {"type":"hello"} to /115.146.95.8
+2016-10-09 14:19:52 [mihiraNectarCoordinationValidator] xyz.AlastairPaterson.ChatServer.Servers.SocketServices.readFromSocket()
+DEBUG: Read {"type":"hello"}
+2016-10-09 14:19:52 [mihiraNectarCoordinationValidator] xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer.validateConnectivity()
+DEBUG: Validated connectivity to mihiraNectar
+2016-10-09 14:19:53 [main] xyz.AlastairPaterson.ChatServer.Main.validateConnectivity()
+WARNING: Can't reach all servers, waiting three seconds before trying again
+Server mihiraNectar connected: true
+Server mihira2Nectar connected: false
+2016-10-09 14:19:56 [main] xyz.AlastairPaterson.ChatServer.Main.validateConnectivity()
+WARNING: Can't reach all servers, waiting three seconds before trying again
+Server mihiraNectar connected: true
+Server mihira2Nectar connected: false
+2016-10-09 14:19:59 [main] xyz.AlastairPaterson.ChatServer.Main.validateConnectivity()
+WARNING: Can't reach all servers, waiting three seconds before trying again
+Server mihiraNectar connected: true
+Server mihira2Nectar connected: false

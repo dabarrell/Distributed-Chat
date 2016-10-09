@@ -64,6 +64,7 @@ public class CoordinationServer {
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
             socket = SocketServices.buildServerSocket(this.coordinationPort);
+            Logger.info("Recieving co-ordination port is {}", this.coordinationPort);
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
@@ -124,6 +125,7 @@ public class CoordinationServer {
      */
     public String sendMessage(Message message) throws Exception {
         SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+        Logger.debug("Sending message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
     }
