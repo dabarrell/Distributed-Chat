@@ -92,7 +92,7 @@ public class ClientConnection {
                 }
             }
             Logger.debug("Coms loop exited - cleaning up");
-        } catch (IOException e) {
+        } catch (Exception e) {
             Logger.error("IOException occurred during client communication - terminating client");
         }
         finally {
@@ -103,7 +103,7 @@ public class ClientConnection {
         }
     }
 
-    private void processDeleteRoom(RoomDelete roomDelete) throws IOException {
+    private void processDeleteRoom(RoomDelete roomDelete) throws Exception {
         if (this.identity.getOwnedRoom() == null
                 || !this.identity.getOwnedRoom().getRoomId().equalsIgnoreCase(roomDelete.getRoomId())) {
             // Must own room to delete it
@@ -117,7 +117,7 @@ public class ClientConnection {
         this.sendMessage(roomDelete);
     }
 
-    private void processSwitchRoom(RoomChangeClientRequest roomChangeClientRequest) throws IOException {
+    private void processSwitchRoom(RoomChangeClientRequest roomChangeClientRequest) throws Exception {
 
         ChatRoom destinationRoom = StateManager.getInstance().getRoom(roomChangeClientRequest.getRoomId());
 
@@ -142,7 +142,7 @@ public class ClientConnection {
      * @param roomCreateClientRequest The client room creation message
      * @throws IOException If sub-requests fail, IO exception is thrown
      */
-    private void processCreateRoom(RoomCreateClientRequest roomCreateClientRequest) throws IOException {
+    private void processCreateRoom(RoomCreateClientRequest roomCreateClientRequest) throws Exception {
         if (this.identity.getOwnedRoom() != null) {
             // Check user doesn't own another room
             roomCreateClientRequest.setApproved(false);
@@ -219,7 +219,7 @@ public class ClientConnection {
             }
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
-        } catch (IOException e) {
+        } catch (Exception e) {
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }
 

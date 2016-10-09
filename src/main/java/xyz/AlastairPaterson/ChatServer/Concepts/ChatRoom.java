@@ -92,7 +92,7 @@ public class ChatRoom {
      * @throws IOException If IO exception occurs
      * @throws IdentityOwnsRoomException If user already owns a room, can't join another one
      */
-    public void join(Identity identity) throws RemoteChatRoomException, IOException, IdentityOwnsRoomException {
+    public void join(Identity identity) throws Exception {
         if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
             throw new IdentityOwnsRoomException();
         }
@@ -114,11 +114,11 @@ public class ChatRoom {
         identity.setCurrentRoom(this);
     }
 
-    public void leave(Identity identity) throws IOException {
+    public void leave(Identity identity) throws Exception {
         this.leave(identity, null);
     }
 
-    public void leave(Identity identity, ChatRoom destination) throws IOException {
+    public void leave(Identity identity, ChatRoom destination) throws Exception {
 
         if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
             this.destroy();
@@ -162,7 +162,7 @@ public class ChatRoom {
      *
      * @throws IOException If an IO exception occurs
      */
-    public void destroy() throws IOException {
+    public void destroy() throws Exception {
         Logger.debug("Destroying room");
         owner.setOwnedRoom(null);
         this.ownerId = "";
