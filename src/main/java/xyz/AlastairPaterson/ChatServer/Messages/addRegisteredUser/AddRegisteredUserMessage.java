@@ -5,7 +5,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 /**
  * Represents a new user to be registered by the server
  */
-public class AddRegisteredUser extends Message {
+public class AddRegisteredUserMessage extends Message {
     private String serverid;
     private String identity;
 
@@ -13,7 +13,7 @@ public class AddRegisteredUser extends Message {
      * Creates a new message
      * @param identity The identity requested
      */
-    public AddRegisteredUser(String identity) {
+    public AddRegisteredUserMessage(String identity) {
         super("addRegisteredUser");
         this.identity = identity;
     }

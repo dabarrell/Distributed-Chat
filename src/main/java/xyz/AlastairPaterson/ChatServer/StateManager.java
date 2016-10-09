@@ -188,13 +188,12 @@ public class StateManager {
         this.mainHall = mainHall;
     }
 
-    public boolean isUserRegistered(String userName){
+    public synchronized boolean isUserRegistered(String userName){
       return this.registeredUsers.containsKey(userName);
     }
 
     /* Setters */
-
-    public void addRegisteredUser(String name) {
+    public synchronized  void addRegisteredUser(String name) {
       if(!isUserRegistered(name)){
         Logger.info("Adding user {} to registered user list", name);
         this.registeredUsers.put(name, true);

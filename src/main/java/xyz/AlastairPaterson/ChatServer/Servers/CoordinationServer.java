@@ -9,7 +9,7 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUser;
+import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
@@ -194,7 +194,7 @@ public class CoordinationServer {
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
                     break;
                 case "addRegisteredUser":
-                    processAddRegisteredUser(jsonSerializer.fromJson(receivedData, AddRegisteredUser.class));
+                    processAddRegisteredUser(jsonSerializer.fromJson(receivedData, AddRegisteredUserMessage.class));
                     break;
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
@@ -214,8 +214,21 @@ public class CoordinationServer {
     /**
      *
      */
-    private void processAddRegisteredUser(AddRegisteredUser message){
+    private void processAddRegisteredUser(AddRegisteredUserMessage message){
+      if (!StateManager.getInstance().isUserRegistered(message.getIdentity())){
         StateManager.getInstance().addRegisteredUser(message.getIdentity());
+
+        try{
+          for(CoordinationServer server : StateManager.getInstance().getServers()) {
+            server.sendMessage(message);
+          }
+        }catch( Exception e ){
+          Logger.error(e);
+        }
+
+      }else{
+        Logger.info( "User {} is allready registered", message.getIdentity() );
+      }
     }
 
     /**

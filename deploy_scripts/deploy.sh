@@ -5,6 +5,7 @@
 
 if [ $# -eq 0 ]; then
   echo "The first argument must be the password to decrypt the private key"
+  echo "The seconds argument must be the name of the server"
   exit 1
 fi
 
@@ -86,6 +87,5 @@ git checkout mihira/authentication
 
 # execute server
 killall java
-nohup ./run_deamon.sh &
-echo "Server started "
+nohup ./run_deamon.sh "$2" &
 exit 0
