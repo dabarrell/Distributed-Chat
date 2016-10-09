@@ -133,8 +133,8 @@ public class CoordinationServer {
 
     public void sendMessageWithoutReply(Message message) throws Exception{
         SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
-        Logger.debug("Sending message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
+        Logger.debug("Sent message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
     }
 
     /**
