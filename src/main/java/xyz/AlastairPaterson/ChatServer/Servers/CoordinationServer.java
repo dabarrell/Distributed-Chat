@@ -131,6 +131,12 @@ public class CoordinationServer {
         return SocketServices.readFromSocket(remoteServer);
     }
 
+    public void sendMessageWithoutReply(Message message) throws Exception{
+        SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+        Logger.debug("Sending message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
+        SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
+    }
+
     /**
      * Validates this server is reachable
      */
@@ -223,7 +229,7 @@ public class CoordinationServer {
         try{
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()
               .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
-            server.sendMessage(message);
+            server.sendMessageWithoutReply(message);
           }
         }catch( Exception e ){
           Logger.error(e);
