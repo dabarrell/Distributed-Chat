@@ -32,6 +32,8 @@ client/classes/**
 
 ## Plugin-specific files:
 
+*.out
+
 # IntelliJ
 /out/
 /target/

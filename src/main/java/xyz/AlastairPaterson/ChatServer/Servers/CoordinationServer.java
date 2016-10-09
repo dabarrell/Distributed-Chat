@@ -139,7 +139,7 @@ public class CoordinationServer {
                 this.sendMessage(new HelloMessage());
                 break;
             } catch (ConnectException e) {
-                Logger.debug("Couldn't reach {} - error {}", this.id, e.getMessage());
+                Logger.debug("Couldn't reach {} at {} on port {} - error {}", this.id, this.hostname, this.coordinationPort, e.getMessage());
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException ex) {
