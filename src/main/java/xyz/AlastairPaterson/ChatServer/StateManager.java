@@ -187,16 +187,20 @@ public class StateManager {
     public void setMainHall(ChatRoom mainHall) {
         this.mainHall = mainHall;
     }
-
-    public synchronized boolean isUserRegistered(String userName){
-      return this.registeredUsers.containsKey(userName);
+    
+    public boolean isUserRegistered(String name){
+      return this.registeredUsers.containsKey(name);
     }
 
     /* Setters */
-    public synchronized  void addRegisteredUser(String name) {
-      if(!isUserRegistered(name)){
+    public synchronized boolean addRegisteredUser(String name) {
+      if(!this.registeredUsers.containsKey(name)){
         Logger.info("Adding user {} to registered user list", name);
         this.registeredUsers.put(name, true);
+        return true;
+      }else{
+        Logger.debug("User {} allready exists as registered user", name);
+        return false;
       }
     }
 }
