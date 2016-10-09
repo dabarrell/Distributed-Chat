@@ -229,7 +229,7 @@ public class CoordinationServer {
         try{
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()
               .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
-            server.sendMessageWithoutReply(message);
+            //server.sendMessageWithoutReply(message);
           }
         }catch( Exception e ){
           Logger.error(e);
