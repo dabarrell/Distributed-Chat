@@ -87,5 +87,4 @@ git checkout mihira/authentication
 
 # execute server
 killall java
-nohup ./run_deamon.sh "$2" &
-exit 0
+nohup ./run_deamon.sh "$2" "$3"
