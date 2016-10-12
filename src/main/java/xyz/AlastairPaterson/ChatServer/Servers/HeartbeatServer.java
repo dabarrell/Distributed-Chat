@@ -8,41 +8,36 @@ import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
 /**
- * Created by atp on 12/10/16.
+ * Listens for, replies to and generates heartbeat messages at a set interval
  */
-public class HeartbeatServer {
-    private final int POLL_INTERVAL_SECONDS = 10;
-
-    private int heartbeatPort;
-
+class HeartbeatServer {
     private SSLServerSocket serverSocket;
-    private SSLSocketFactory clientSocketFactory;
 
     private final Gson jsonSerializer = new Gson();
 
     /**
      * Creates a new heartbeat server listening and communicating on the specified port
      *
-     * @param heartbeatPort
+     * @param heartbeatPort The port to listen on
      */
-    public HeartbeatServer(int heartbeatPort) throws Exception {
+    HeartbeatServer(int heartbeatPort) throws Exception {
         serverSocket = SocketServices.buildServerSocket(heartbeatPort);
-
-        clientSocketFactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
-
-        this.heartbeatPort = heartbeatPort;
 
         Thread heartbeatThread = new Thread(this::respondHeartbeat, "HeartBeatThread");
         heartbeatThread.start();
     }
 
-    public void startPolling() {
+    /**
+     * Commences the polling timer
+     */
+    void startPolling() {
+        int POLL_INTERVAL_SECONDS = 10;
+
         Timer pollTimer = new Timer("HeartbeatPollThread");
         pollTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -62,6 +57,12 @@ public class HeartbeatServer {
         }, 0, POLL_INTERVAL_SECONDS * 1000);
     }
 
+    /**
+     * Sends a heartbeat message to a coordination server
+     *
+     * @param server The server to communicate with
+     * @throws ServerFailureException If the server communication fails, the server is assumed to have failed
+     */
     private void sendHeartbeat(CoordinationServer server) throws ServerFailureException {
         try {
             HeartbeatMessage message = new HeartbeatMessage();
@@ -74,7 +75,11 @@ public class HeartbeatServer {
         }
     }
 
+    /**
+     * Listens for and responds to heartbeat messages
+     */
     private void respondHeartbeat() {
+        //TODO: should try/catch be on the inside of the loop? Probably
         try {
             while (true) {
                 SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
