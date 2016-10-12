@@ -28,6 +28,10 @@ public class AddRegisteredUserMessage extends Message {
         return identity;
     }
 
+    /**
+     * The password
+     * @return The password
+     */
     public String getPassword() {
         return password;
     }
