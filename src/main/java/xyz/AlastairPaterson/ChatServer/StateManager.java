@@ -203,4 +203,12 @@ public class StateManager {
         return false;
       }
     }
+
+    public synchronized boolean checkPasswordForUser(String name, String password){
+      if(!this.registeredUsers.containsKey(name)){
+        return false;
+      }else{
+        return !this.registeredUsers.get(name).compareTo(password);
+      }
+    }
 }

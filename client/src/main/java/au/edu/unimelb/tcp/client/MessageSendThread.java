@@ -66,6 +66,9 @@ public class MessageSendThread implements Runnable {
 	public void MessageSend(Socket socket, String msg) throws IOException {
 		JSONObject sendToServer = new JSONObject();
 		String []array = msg.split(" ");
+    for(String s : array){
+      System.out.println(s);
+    }
 		if(!array[0].startsWith("#")) {
 			sendToServer = ClientMessages.getMessage(msg);
 			send(sendToServer);
@@ -88,7 +91,7 @@ public class MessageSendThread implements Runnable {
 				System.out.print("[" + state.getRoomId() + "] " + state.getIdentity() + "> ");
 			}
 		}
-		else if (array.length == 2) {
+		else if (array.length >= 2) {
 			if(array[0].startsWith("#joinroom")) {
 				sendToServer = ClientMessages.getJoinRoomRequest(array[1]);
 				send(sendToServer);
@@ -111,7 +114,7 @@ public class MessageSendThread implements Runnable {
 			}
 		}
 		else {
-			System.out.println("Invalid command!");
+			System.out.println("Invalid command!!");
 			System.out.print("[" + state.getRoomId() + "] " + state.getIdentity() + "> ");
 		}
 		

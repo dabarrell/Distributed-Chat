@@ -119,6 +119,12 @@ public class ClientListener {
         }
 
         if ( !StateManager.getInstance().isUserRegistered(identity) ){
+          Logger.info("User {} is not registered", identity);
+          return false;
+        }
+
+        if ( !StateManager.getInstance().checkPasswordForUser(identity) ){
+          Logger.info("Password incorrect for user {}", identity);
           return false;
         }
 
