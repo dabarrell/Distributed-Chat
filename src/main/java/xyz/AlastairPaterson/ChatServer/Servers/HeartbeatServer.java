@@ -2,6 +2,9 @@ package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
 import org.pmw.tinylog.Logger;
+import xyz.AlastairPaterson.ChatServer.Exceptions.ServerFailureException;
+import xyz.AlastairPaterson.ChatServer.Messages.HeartbeatMessage;
+import xyz.AlastairPaterson.ChatServer.StateManager;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -34,20 +37,41 @@ public class HeartbeatServer {
         clientSocketFactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
 
         this.heartbeatPort = heartbeatPort;
-        this.runPoll();
 
         Thread heartbeatThread = new Thread(this::respondHeartbeat, "HeartBeatThread");
-        heartbeatThread.run();
+        heartbeatThread.start();
     }
 
-    private void runPoll() {
-        Timer pollTimer = new Timer();
+    public void startPolling() {
+        Timer pollTimer = new Timer("HeartbeatPollThread");
         pollTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 Logger.debug("Beginning heartbeat");
+                for (CoordinationServer s: StateManager.getInstance().getServers()) {
+                    try {
+                        sendHeartbeat(s);
+                    } catch (ServerFailureException e) {
+                        Logger.error("Server {} has failed!", s.getHostname());
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }, 0, POLL_INTERVAL_SECONDS * 1000);
+    }
+
+    private void sendHeartbeat(CoordinationServer server) throws ServerFailureException {
+        try {
+            HeartbeatMessage message = new HeartbeatMessage();
+            SSLSocket clientSocket = SocketServices.buildClientSocket(server.getHostname(), server.getHeartbeatPort());
+            SocketServices.writeToSocket(clientSocket, jsonSerializer.toJson(message));
+            HeartbeatMessage response = jsonSerializer.fromJson(SocketServices.readFromSocket(clientSocket), HeartbeatMessage.class);
+            if (message.getSequence() != response.getSequence()) throw new ServerFailureException();
+        } catch (Exception e) {
+            throw new ServerFailureException();
+        }
     }
 
     private void respondHeartbeat() {
