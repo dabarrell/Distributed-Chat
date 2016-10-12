@@ -32,9 +32,20 @@ client/classes/**
 
 ## Plugin-specific files:
 
+*.out
+
 # IntelliJ
 /out/
 /target/
+
+#client
+client/target
+
+#adduser
+add_user/target
+
+#log
+log.txt
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/

@@ -118,6 +118,10 @@ public class ClientListener {
             return false;
         }
 
+        if ( !StateManager.getInstance().isUserRegistered(identity) ){
+          return false;
+        }
+
         IdentityLockMessage lockMessage = new IdentityLockMessage(StateManager.getInstance().getThisServerId(), identity);
 
         for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {

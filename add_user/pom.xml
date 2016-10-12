@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>xyz.AlastairPaterson</groupId>
-    <artifactId>ChatServer</artifactId>
+    <groupId>com.Consensus</groupId>
+    <artifactId>AdminAddUser</artifactId>
     <version>1.0</version>
     <build>
         <resources>
@@ -22,7 +22,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>xyz.AlastairPaterson.ChatServer.Main</mainClass>
+                            <mainClass>com.Consensus.AdminAddUser.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -44,7 +44,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>xyz.AlastairPaterson.ChatServer.Main</mainClass>
+                            <mainClass>com.Consensus.AdminAddUser.Main</mainClass>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                     </archive>
@@ -88,6 +88,11 @@
             <artifactId>gson</artifactId>
             <version>2.7</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.argparse4j</groupId>

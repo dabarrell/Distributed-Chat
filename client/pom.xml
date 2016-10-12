@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>xyz.AlastairPaterson</groupId>
-    <artifactId>ChatServer</artifactId>
+    <groupId>au.edu.unimelb.tcp.client</groupId>
+    <artifactId>Client</artifactId>
     <version>1.0</version>
     <build>
         <resources>
@@ -22,7 +22,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>xyz.AlastairPaterson.ChatServer.Main</mainClass>
+                            <mainClass>au.edu.unimelb.tcp.client.Client</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -44,7 +44,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>xyz.AlastairPaterson.ChatServer.Main</mainClass>
+                            <mainClass>au.edu.unimelb.tcp.client.Client</mainClass> 
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                     </archive>
@@ -84,25 +84,14 @@
     <dependencies>
         <!--  GSON: Java to Json conversion -->
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.7</version>
-            <scope>compile</scope>
+            <groupId>args4j</groupId>
+            <artifactId>args4j</artifactId>
+            <version>2.33</version>
         </dependency>
         <dependency>
-            <groupId>net.sourceforge.argparse4j</groupId>
-            <artifactId>argparse4j</artifactId>
-            <version>0.7.0</version>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.tinylog</groupId>
-            <artifactId>tinylog</artifactId>
-            <version>1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.4</version>
-      </dependency>
     </dependencies>
 </project>
