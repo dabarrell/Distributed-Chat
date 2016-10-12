@@ -1,2 +1,2 @@
-test
-mihira
+test, brunswick
+mihira, password

@@ -17,6 +17,7 @@ public class Client {
 
 		SSLSocket socket = null;
 		String identity = null;
+		String password = null;
 		boolean debug = false;
 		try {
 			//load command line args
@@ -26,6 +27,7 @@ public class Client {
 				parser.parseArgument(args);
 				String hostname = values.getHost();
 				identity = values.getIdeneity();
+				password = values.getPassword();
 				int port = values.getPort();
 				debug = values.isDebug();
 				SSLSocketFactory factory = (SSLSocketFactory)SSLSocketFactory.getDefault();
@@ -34,7 +36,7 @@ public class Client {
 				e.printStackTrace();
 			}
 			
-			State state = new State(identity, "");
+			State state = new State(identity, password, "");
 			
 			// start sending thread
 			MessageSendThread messageSendThread = new MessageSendThread(socket, state, debug);

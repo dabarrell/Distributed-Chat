@@ -8,14 +8,16 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
 public class AddRegisteredUserMessage extends Message {
     private String serverid;
     private String identity;
+    private String password;
 
     /**
      * Creates a new message
      * @param identity The identity requested
      */
-    public AddRegisteredUserMessage(String identity) {
+    public AddRegisteredUserMessage(String identity, String password) {
         super("addRegisteredUser");
         this.identity = identity;
+        this.password = password;
     }
 
     /**
@@ -24,6 +26,10 @@ public class AddRegisteredUserMessage extends Message {
      */
     public String getIdentity() {
         return identity;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
 }

@@ -4,10 +4,12 @@ public class State {
 
 	private String identity;
 	private String roomId;
+	private String password;
 	
-	public State(String identity, String roomId) {
+	public State(String identity, String password, String roomId) {
 		this.identity = identity;
 		this.roomId = roomId;
+    this.password = password;
 		
 	}
 	
@@ -21,6 +23,10 @@ public class State {
 	public String getIdentity() {
 		return identity;
 	}
+
+  public String getPassword() {
+    return password;
+  }
 	
 	
 }

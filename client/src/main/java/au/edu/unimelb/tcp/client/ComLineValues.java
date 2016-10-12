@@ -11,6 +11,9 @@ public class ComLineValues {
 
 	@Option(required=true, name = "-i", aliases="--identity", usage="Client identity")
 	private String identity;
+
+	@Option(required=true, name = "-s", aliases="--secret", usage="Password")
+	private String secret;
 	
 	@Option(required=false, name = "-d", aliases="--debug", usage="Debug mode")
 	private boolean debug = false;
@@ -30,4 +33,9 @@ public class ComLineValues {
 	public boolean isDebug() {
 		return debug;
 	}
+  
+  public String getPassword() {
+    return secret;
+  }
+
 }

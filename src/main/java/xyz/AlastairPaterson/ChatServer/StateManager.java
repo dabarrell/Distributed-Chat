@@ -36,7 +36,7 @@ public class StateManager {
 
     private final List<CoordinationServer> servers = new LinkedList<>();
 
-    private final HashMap<String, Boolean> registeredUsers = new HashMap<>();
+    private final HashMap<String, String> registeredUsers = new HashMap<>();
 
     private ChatRoom mainHall;
 
@@ -193,10 +193,10 @@ public class StateManager {
     }
 
     /* Setters */
-    public synchronized boolean addRegisteredUser(String name) {
+    public synchronized boolean addRegisteredUser(String name, String password) {
       if(!this.registeredUsers.containsKey(name)){
         Logger.info("Adding user {} to registered user list", name);
-        this.registeredUsers.put(name, true);
+        this.registeredUsers.put(name, password);
         return true;
       }else{
         Logger.debug("User {} allready exists as registered user", name);
