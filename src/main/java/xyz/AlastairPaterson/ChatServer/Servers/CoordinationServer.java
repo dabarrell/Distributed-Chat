@@ -9,6 +9,7 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomDelete;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.stream.Collectors;
 
 /**
  * Coordinates client actions between servers
@@ -63,6 +65,7 @@ public class CoordinationServer {
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
             socket = SocketServices.buildServerSocket(this.coordinationPort);
+            Logger.info("Recieving co-ordination port is {}", this.coordinationPort);
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
@@ -123,8 +126,15 @@ public class CoordinationServer {
      */
     public String sendMessage(Message message) throws Exception {
         SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+        Logger.debug("Sending message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
         SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
         return SocketServices.readFromSocket(remoteServer);
+    }
+
+    public void sendMessageWithoutReply(Message message) throws Exception{
+        SSLSocket remoteServer = SocketServices.buildClientSocket(this.hostname, this.coordinationPort);
+        SocketServices.writeToSocket(remoteServer, new Gson().toJson(message));
+        Logger.debug("Sent message {} to {} on port {}", message.toString(), this.hostname, this.coordinationPort);
     }
 
     /**
@@ -136,7 +146,7 @@ public class CoordinationServer {
                 this.sendMessage(new HelloMessage());
                 break;
             } catch (ConnectException e) {
-                Logger.debug("Couldn't reach {} - error {}", this.id, e.getMessage());
+                Logger.debug("Couldn't reach {} at {} on port {} - error {}", this.id, this.hostname, this.coordinationPort, e.getMessage());
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException ex) {
@@ -192,6 +202,9 @@ public class CoordinationServer {
                 case "releaseroomid":
                     processUnlockRoomRequest(jsonSerializer.fromJson(receivedData, RoomReleaseLockMessage.class));
                     break;
+                case "addRegisteredUser":
+                    processAddRegisteredUser(jsonSerializer.fromJson(receivedData, AddRegisteredUserMessage.class));
+                    break;
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
                     break;
@@ -205,6 +218,26 @@ public class CoordinationServer {
 
     private void processDeleteRoomRequest(RoomDelete roomDelete) {
         StateManager.getInstance().getRooms().remove(StateManager.getInstance().getRoom(roomDelete.getRoomId()));
+    }
+
+    /**
+     *
+     */
+    private void processAddRegisteredUser(AddRegisteredUserMessage message){
+      if ( StateManager.getInstance().addRegisteredUser(message.getIdentity()) ){
+        // User didn't exist and was added
+        try{
+          for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+              .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
+            //server.sendMessageWithoutReply(message);
+          }
+        }catch( Exception e ){
+          Logger.error(e);
+        }
+
+      }else{
+        Logger.info( "User {} is allready registered", message.getIdentity() );
+      }
     }
 
     /**

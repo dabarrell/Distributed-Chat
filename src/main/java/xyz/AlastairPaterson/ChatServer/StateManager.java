@@ -6,10 +6,12 @@ import xyz.AlastairPaterson.ChatServer.Concepts.Identity;
 import xyz.AlastairPaterson.ChatServer.Concepts.LockType;
 import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
+import org.pmw.tinylog.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.HashMap;
 
 /**
  * Manages the coordination server's state
@@ -33,6 +35,8 @@ public class StateManager {
     private final List<EntityLock> lockedEntities = new LinkedList<>();
 
     private final List<CoordinationServer> servers = new LinkedList<>();
+
+    private final HashMap<String, Boolean> registeredUsers = new HashMap<>();
 
     private ChatRoom mainHall;
 
@@ -182,5 +186,21 @@ public class StateManager {
 
     public void setMainHall(ChatRoom mainHall) {
         this.mainHall = mainHall;
+    }
+    
+    public boolean isUserRegistered(String name){
+      return this.registeredUsers.containsKey(name);
+    }
+
+    /* Setters */
+    public synchronized boolean addRegisteredUser(String name) {
+      if(!this.registeredUsers.containsKey(name)){
+        Logger.info("Adding user {} to registered user list", name);
+        this.registeredUsers.put(name, true);
+        return true;
+      }else{
+        Logger.debug("User {} allready exists as registered user", name);
+        return false;
+      }
     }
 }
