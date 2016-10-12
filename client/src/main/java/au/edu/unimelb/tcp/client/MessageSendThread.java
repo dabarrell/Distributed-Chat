@@ -66,9 +66,6 @@ public class MessageSendThread implements Runnable {
 	public void MessageSend(Socket socket, String msg) throws IOException {
 		JSONObject sendToServer = new JSONObject();
 		String []array = msg.split(" ");
-    for(String s : array){
-      System.out.println(s);
-    }
 		if(!array[0].startsWith("#")) {
 			sendToServer = ClientMessages.getMessage(msg);
 			send(sendToServer);
