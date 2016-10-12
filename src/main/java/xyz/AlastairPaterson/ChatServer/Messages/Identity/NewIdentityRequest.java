@@ -7,6 +7,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Message;
  */
 public class NewIdentityRequest extends Message {
     private String identity;
+    private String password;
 
     /**
      * Creates a NewIdentityRequest
@@ -21,5 +22,9 @@ public class NewIdentityRequest extends Message {
      */
     public String getIdentity() {
         return identity;
+    }
+
+    public String getPassword() {
+        return password;
     }
 }

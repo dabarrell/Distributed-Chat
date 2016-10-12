@@ -208,7 +208,7 @@ public class StateManager {
       if(!this.registeredUsers.containsKey(name)){
         return false;
       }else{
-        return !this.registeredUsers.get(name).compareTo(password);
+        return this.registeredUsers.get(name).compareTo(password) == 0 ? true : false;
       }
     }
 }
