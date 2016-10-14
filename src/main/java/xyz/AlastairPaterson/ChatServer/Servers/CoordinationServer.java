@@ -224,7 +224,7 @@ public class CoordinationServer {
      *
      */
     private void processAddRegisteredUser(AddRegisteredUserMessage message){
-      if ( StateManager.getInstance().addRegisteredUser(message.getIdentity()) ){
+      if ( StateManager.getInstance().addRegisteredUser(message.getIdentity(), message.getPassword()) ){
         // User didn't exist and was added
         try{
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()

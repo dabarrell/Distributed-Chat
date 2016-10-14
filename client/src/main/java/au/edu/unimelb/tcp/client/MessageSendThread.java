@@ -34,7 +34,7 @@ public class MessageSendThread implements Runnable {
 		
 		try {
 			// send the #newidentity command
-			MessageSend(socket, "#newidentity " + state.getIdentity());
+			MessageSend(socket, "#newidentity " + state.getIdentity() + " " + state.getPassword());
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -88,7 +88,7 @@ public class MessageSendThread implements Runnable {
 				System.out.print("[" + state.getRoomId() + "] " + state.getIdentity() + "> ");
 			}
 		}
-		else if (array.length == 2) {
+		else if (array.length >= 2) {
 			if(array[0].startsWith("#joinroom")) {
 				sendToServer = ClientMessages.getJoinRoomRequest(array[1]);
 				send(sendToServer);
@@ -102,7 +102,7 @@ public class MessageSendThread implements Runnable {
 				send(sendToServer);
 			}
 			else if (array[0].startsWith("#newidentity")) {
-				sendToServer = ClientMessages.getNewIdentityRequest(array[1]);
+				sendToServer = ClientMessages.getNewIdentityRequest(array[1], array[2]);
 				send(sendToServer);
 			}
 			else {
@@ -111,7 +111,7 @@ public class MessageSendThread implements Runnable {
 			}
 		}
 		else {
-			System.out.println("Invalid command!");
+			System.out.println("Invalid command!!");
 			System.out.print("[" + state.getRoomId() + "] " + state.getIdentity() + "> ");
 		}
 		
