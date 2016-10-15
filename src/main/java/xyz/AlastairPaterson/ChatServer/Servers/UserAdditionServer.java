@@ -31,7 +31,7 @@ public class UserAdditionServer{
 
     private boolean connected = false;
 
-    private final static int PORT = 18888;
+    private int port;
 
     private SSLServerSocket socket;
 
@@ -45,15 +45,16 @@ public class UserAdditionServer{
      * @param id               The specified server ID
      * @throws IOException Thrown if initialization fails for some reason
      */
-    public UserAdditionServer(String id) throws Exception {
+    public UserAdditionServer(String id,int port) throws Exception {
         this.id = id;
+        this.port = port;
 
         Thread workerThread;
 
         // Start server
         workerThread = new Thread(this::runServer);
         workerThread.setName(id + "UserAdditionListener");
-        socket = SocketServices.buildServerSocket(PORT);
+        socket = SocketServices.buildServerSocket(port);
 
         workerThread.start();
     }

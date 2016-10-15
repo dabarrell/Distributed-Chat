@@ -57,12 +57,6 @@ public class Main {
             System.exit(1);
         }
 
-        try{
-          UserAdditionServer userAdditionServer = new UserAdditionServer(StateManager.getInstance().getThisServerId());
-        } catch (Exception ex) {
-            Logger.error(ex.getMessage());
-            System.exit(1);
-        }
 
         Logger.info("Chat server now available");
     }
@@ -155,6 +149,7 @@ public class Main {
             int coordinationPort = Integer.parseInt(configuration[3]);
             int clientPort = Integer.parseInt(configuration[2]);
             int heartbeatPort = Integer.parseInt(configuration[4]);
+            int userAdditionPort = Integer.parseInt(configuration[5]);
             String serverName = configuration[0];
             String serverAddress = configuration[1];
 
@@ -163,7 +158,8 @@ public class Main {
                     coordinationPort,
                     clientPort,
                     isLocalServer,
-                    heartbeatPort);
+                    heartbeatPort,
+                    userAdditionPort);
 
             localPort += isLocalServer ? clientPort : 0;
 
