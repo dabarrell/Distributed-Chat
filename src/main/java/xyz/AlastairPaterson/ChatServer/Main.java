@@ -154,6 +154,7 @@ public class Main {
             boolean isLocalServer = configuration[0].equalsIgnoreCase(StateManager.getInstance().getThisServerId());
             int coordinationPort = Integer.parseInt(configuration[3]);
             int clientPort = Integer.parseInt(configuration[2]);
+            int heartbeatPort = Integer.parseInt(configuration[4]);
             String serverName = configuration[0];
             String serverAddress = configuration[1];
 
@@ -161,7 +162,8 @@ public class Main {
                     serverAddress,
                     coordinationPort,
                     clientPort,
-                    isLocalServer);
+                    isLocalServer,
+                    heartbeatPort);
 
             localPort += isLocalServer ? clientPort : 0;
 
@@ -213,6 +215,7 @@ public class Main {
             Logger.warn(sb.toString());
             Thread.sleep(3000);
         }
+        StateManager.getInstance().getThisCoordinationServer().startHeartbeatServer();
     }
 
     /**

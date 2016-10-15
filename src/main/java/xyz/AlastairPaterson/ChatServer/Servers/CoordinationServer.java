@@ -32,6 +32,8 @@ public class CoordinationServer {
 
     private final int coordinationPort;
 
+    private final int heartbeatPort;
+
     private final String hostname;
 
     private final String id;
@@ -41,6 +43,8 @@ public class CoordinationServer {
     private SSLServerSocket socket;
 
     private final Gson jsonSerializer = new Gson();
+
+    private HeartbeatServer heartbeatServer;
 
     /**
      * Creates a new coordination server
@@ -52,11 +56,12 @@ public class CoordinationServer {
      * @param localInstance    If this is a locally running server
      * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws Exception {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance, int heartbeatPort) throws Exception {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
         this.clientPort = clientPort;
+        this.heartbeatPort = heartbeatPort;
 
         Thread workerThread;
 
@@ -72,6 +77,8 @@ public class CoordinationServer {
             ChatRoom mainHall = new ChatRoom("MainHall-" + id, this);
             StateManager.getInstance().getRooms().add(mainHall);
             StateManager.getInstance().setMainHall(mainHall);
+
+            this.heartbeatServer = new HeartbeatServer(this.heartbeatPort);
         } else {
             // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
@@ -88,6 +95,10 @@ public class CoordinationServer {
      */
     public boolean isConnected() {
         return connected;
+    }
+
+    public void startHeartbeatServer() {
+        this.heartbeatServer.startPolling();
     }
 
     /**
@@ -115,6 +126,15 @@ public class CoordinationServer {
      */
     public int getClientPort() {
         return clientPort;
+    }
+
+    /**
+     * The heartbeat listening port of the server
+     *
+     * @return The heartbeat port
+     */
+    public int getHeartbeatPort() {
+        return heartbeatPort;
     }
 
     /**
