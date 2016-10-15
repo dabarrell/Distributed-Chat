@@ -82,7 +82,7 @@ public class ClientListener {
     }
 
     private void processNewIdentity(NewIdentityRequest newIdentityRequest, SSLSocket connection) throws Exception {
-        boolean identityOk = this.validateIdentity(newIdentityRequest.getIdentity());
+        boolean identityOk = this.validateIdentity(newIdentityRequest.getIdentity(),newIdentityRequest.getPassword());
 
         if (identityOk) {
             Logger.info("Identity OK - continuing");
@@ -113,12 +113,18 @@ public class ClientListener {
         }
     }
 
-    private boolean validateIdentity(String identity) throws Exception {
+    private boolean validateIdentity(String identity, String password) throws Exception {
         if (identity.length() < 3 || identity.length() > 16) {
             return false;
         }
 
         if ( !StateManager.getInstance().isUserRegistered(identity) ){
+          Logger.info("User {} is not registered", identity);
+          return false;
+        }
+
+        if ( !StateManager.getInstance().checkPasswordForUser(identity, password) ){
+          Logger.info("Password {} incorrect for user {}", password, identity);
           return false;
         }
 
@@ -134,4 +140,5 @@ public class ClientListener {
 
         return true;
     }
+
 }
