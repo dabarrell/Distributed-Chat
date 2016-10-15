@@ -46,12 +46,4 @@ public class LoginSelection
     public JPanel getLoginSelectionPanel() {
         return loginSelectionPanel;
     }
-
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Chat Client");
-        frame.setContentPane(new LoginSelection().loginSelectionPanel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
-    }
 }
