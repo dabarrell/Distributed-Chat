@@ -14,6 +14,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMes
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
+import xyz.AlastairPaterson.ChatServer.Servers.UserAdditionServer;
 
 import javax.naming.ConfigurationException;
 import java.io.*;
@@ -51,6 +52,13 @@ public class Main {
 
         try {
             processServers(readConfiguration(arguments.get("l")));
+        } catch (Exception ex) {
+            Logger.error(ex.getMessage());
+            System.exit(1);
+        }
+
+        try{
+          UserAdditionServer userAdditionServer = new UserAdditionServer(StateManager.getInstance().getThisServerId());
         } catch (Exception ex) {
             Logger.error(ex.getMessage());
             System.exit(1);

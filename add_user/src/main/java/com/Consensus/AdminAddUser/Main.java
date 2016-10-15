@@ -27,6 +27,8 @@ public class Main {
 
     public static final List<RootServer> rootServers = new ArrayList<>();
 
+    public final static PORT = 18888;
+
     /**
      * Where all the magic happens
      *
@@ -150,7 +152,7 @@ public class Main {
            Logger.info("Parsing config ..");
            for (CSVRecord csvRecord : parser) {
              Logger.info("Adding server {}", csvRecord.get(1));
-             rootServers.add(new RootServer(csvRecord.get(1), Integer.parseInt(csvRecord.get(3))));
+             rootServers.add(new RootServer(csvRecord.get(1), PORT));
           }
         }
         catch(IOException e) {
