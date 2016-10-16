@@ -58,9 +58,10 @@ public class ClientMessages {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static JSONObject getNewIdentityRequest(String identity, String password) {
+	public static JSONObject getNewIdentityRequest(String username, String identity, String password) {
 		JSONObject newIdentity = new JSONObject();
 		newIdentity.put("type", "newidentity");
+		newIdentity.put("username", username);
 		newIdentity.put("identity", identity);
 		newIdentity.put("password", password);
 		return newIdentity;
