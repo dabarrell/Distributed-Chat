@@ -67,7 +67,7 @@ public class Main {
           SSLSocketFactory factory = (SSLSocketFactory)SSLSocketFactory.getDefault();
           for( RootServer server : rootServers){
             SSLSocket remoteServer = (SSLSocket)factory.createSocket(server.address, server.port);
-            writeToSocket(remoteServer,  addMessage(arguments.get("i")));
+            writeToSocket(remoteServer,  addMessage(arguments.get("i"), arguments.get("p")));
           }
         }catch(Exception e){
           Logger.error(e);
@@ -131,6 +131,10 @@ public class Main {
                 .required(true)
                 .help("name of identity to register");
 
+        parser.addArgument("-p")
+                .required(true)
+                .help("users password");
+
         return parser;
     }
 
@@ -157,10 +161,11 @@ public class Main {
     /**
      * create message for new user
      */
-    private static String addMessage(String id){
+    private static String addMessage(String id, String password){
       JSONObject object = new JSONObject();
       object.put("type", "addRegisteredUser");
       object.put("identity", id);
+      object.put("password", password);
       return (object.toString() + "\n");
     }
 
