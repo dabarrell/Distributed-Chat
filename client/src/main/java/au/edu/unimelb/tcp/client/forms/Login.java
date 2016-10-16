@@ -43,7 +43,7 @@ public class Login
                 SSLSocket socket = (SSLSocket) factory.createSocket(hostname, port);
 
                 // Initialise the state
-                State state = new State(username, String.valueOf(password), "");
+                State state = new State(username, identity, String.valueOf(password), "");
 
                 // Show the chat room
                 JFrame frame = FormUtilities.getFrame(loginPanel);
