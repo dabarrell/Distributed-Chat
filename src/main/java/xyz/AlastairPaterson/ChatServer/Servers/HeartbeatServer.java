@@ -47,7 +47,7 @@ class HeartbeatServer {
                     try {
                         sendHeartbeat(s);
                     } catch (ServerFailureException e) {
-                        Logger.error("Server {} has failed!", s.getHostname());
+                        failServer(s);
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -57,6 +57,16 @@ class HeartbeatServer {
         }, 0, POLL_INTERVAL_SECONDS * 1000);
     }
 
+    /**
+     * Fails a server, removing it from the list
+     *
+     * @param s The server to fail
+     */
+    private void failServer(CoordinationServer s) {
+        Logger.error("Server {} has failed!", s.getHostname());
+        StateManager.getInstance().removeServer(s);
+    }
+    
     /**
      * Sends a heartbeat message to a coordination server
      *

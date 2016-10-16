@@ -198,7 +198,7 @@ public class StateManager {
      * Adds a user to the registered user hashmap with corresponding password
      *
      * @param name The user name
-     * @param name The password of the user
+     * @param password The password of the user
      *
      * @return True if the user was added successfully, false otherwise.
      */
@@ -217,17 +217,23 @@ public class StateManager {
      * Checks whether a user with the given name and password is registered.
      *
      * @param name The user name
-     * @param name The password of the user
+     * @param password The password of the user
      *
      * @return if the users doesn't exist or the password is incorrect false is returned.
      *         True returned if user exists and password is correct
      */
-    public synchronized boolean checkPasswordForUser(String name, String password){
-      if(!this.registeredUsers.containsKey(name)){
-        return false;
-      }else{
-        return this.registeredUsers.get(name).compareTo(password) == 0 ? true : false;
-      }
+    public synchronized boolean checkPasswordForUser(String name, String password) {
+        return this.registeredUsers.containsKey(name) && this.registeredUsers.get(name).compareTo(password) == 0;
+    }
+
+    /**
+     * Removes a coordination server
+     *
+     * @param s The server to remove
+     */
+    public synchronized void removeServer(CoordinationServer s) {
+        this.getRooms().removeIf(x -> x.getOwnerServer().equals(s));
+        this.getServers().remove(s);
     }
 
 }
