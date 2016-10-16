@@ -126,7 +126,7 @@ public class ClientListener {
           return false;
         }
 
-        if ( !StateManager.getInstance().checkPasswordForUser(identity, password) ){
+        if ( !StateManager.getInstance().checkPasswordForUser(username, password) ){
           Logger.info("Password {} incorrect for user {}", password, username);
           return false;
         }
