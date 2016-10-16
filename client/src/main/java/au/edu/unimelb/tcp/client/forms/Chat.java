@@ -47,7 +47,7 @@ public class Chat
 
         try {
             // Send the #newidentity command
-            send(ClientMessages.getNewIdentityRequest(state.getIdentity(), state.getPassword()));
+            send(ClientMessages.getNewIdentityRequest(state.getUsername(), state.getIdentity(), state.getPassword()));
         } catch (IOException e1) {
             JOptionPane.showMessageDialog(FormUtilities.getFrame(chatPanel), e1.getMessage());
         }
