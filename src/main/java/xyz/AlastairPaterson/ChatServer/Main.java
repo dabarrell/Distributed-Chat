@@ -166,7 +166,9 @@ public class Main {
             localPort += isLocalServer ? clientPort : 0;
 
             // Add our found coordination server
-            StateManager.getInstance().addServer(currentServer);
+            if (StateManager.getInstance().addServer(currentServer)) {
+                currentServer.begin();
+            }
         }
 
         Logger.debug("Config loaded, validating connectivity");
@@ -175,9 +177,10 @@ public class Main {
 
         if (additional) {
             processAdditional();
+        } else {
+            // TODO should this be in the CoordinationServer thread?
+            informServersOfMainHall();
         }
-
-        informServersOfMainHall();
 
         new ClientListener(localPort);
 
@@ -190,7 +193,8 @@ public class Main {
         String serverId = StateManager.getInstance().getThisServerId();
         String hostname = StateManager.getInstance().getThisCoordinationServer().getHostname();
         int coordPort = StateManager.getInstance().getThisCoordinationServer().getCoordinationPort();
-        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort);
+        int clientPort = StateManager.getInstance().getThisCoordinationServer().getClientPort();
+        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort, clientPort);
 
         for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
             if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {

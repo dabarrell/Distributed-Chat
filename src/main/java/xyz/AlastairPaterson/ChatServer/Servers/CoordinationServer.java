@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 public class CoordinationServer {
     private boolean connected = false;
 
+    private boolean localInstance = false;
+
     private final int coordinationPort;
 
     private final String hostname;
@@ -53,12 +55,15 @@ public class CoordinationServer {
      * @param localInstance    If this is a locally running server
      * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) throws Exception {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
         this.clientPort = clientPort;
+        this.localInstance = localInstance;
+    }
 
+    public void begin() throws Exception {
         Thread workerThread;
 
         if (localInstance) {
@@ -243,7 +248,7 @@ public class CoordinationServer {
         try{
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()
               .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
-            //server.sendMessageWithoutReply(message);
+//            server.sendMessageWithoutReply(message);
           }
         }catch( Exception e ){
           Logger.error(e);
@@ -343,5 +348,45 @@ public class CoordinationServer {
      */
     private void processNewServerRequest(NewServerRequestMessage newServerRequestMessage) {
         Logger.info("New server request received");
+
+        CoordinationServer newServer = new CoordinationServer(newServerRequestMessage.getServerId(),
+                newServerRequestMessage.getHost(),
+                newServerRequestMessage.getCoordPort(),
+                newServerRequestMessage.getClientPort(),
+                false);
+
+        if (StateManager.getInstance().addServer(newServer)) {
+            // Server didn't exist and was added
+            try{
+                for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+                        .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+                        .filter(x -> !x.getId().equalsIgnoreCase(newServer.getId()))
+                        .collect(Collectors.toList())){
+//            server.sendMessageWithoutReply(message);
+                }
+            }catch( Exception e ){
+                Logger.error(e);
+            }
+
+        }else{
+            Logger.info( "Server {} is already registered", newServerRequestMessage.getServerId() );
+
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CoordinationServer that = (CoordinationServer) o;
+
+        return id.equals(that.id);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }

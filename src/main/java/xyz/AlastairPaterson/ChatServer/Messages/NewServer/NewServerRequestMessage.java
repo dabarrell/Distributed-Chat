@@ -9,18 +9,21 @@ public class NewServerRequestMessage extends Message {
     private String serverId;
     private String host;
     private int coordPort;
+    private int clientPort;
 
     /**
      * Creates a new message
      * @param host
      * @param coordPort
      * @param serverId
+     * @param clientPort
      */
-    public NewServerRequestMessage(String serverId, String host, int coordPort) {
+    public NewServerRequestMessage(String serverId, String host, int coordPort, int clientPort) {
         super("newServerRequest");
         this.serverId = serverId;
         this.host = host;
         this.coordPort = coordPort;
+        this.clientPort = clientPort;
     }
 
     /**
@@ -45,5 +48,13 @@ public class NewServerRequestMessage extends Message {
      */
     public int getCoordPort() {
         return coordPort;
+    }
+
+    /**
+     * Gets clientPort
+     * @return the clientPort of the new server
+     */
+    public int getClientPort() {
+        return clientPort;
     }
 }

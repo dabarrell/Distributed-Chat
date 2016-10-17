@@ -51,8 +51,15 @@ public class StateManager {
      *
      * @param server The new server being added
      */
-    void addServer(CoordinationServer server) {
-        this.servers.add(server);
+    public synchronized boolean addServer(CoordinationServer server) {
+        if(!this.servers.contains(server)){
+            Logger.info("Adding server {} to server list", server.getId());
+            this.servers.add(server);
+            return true;
+        }else{
+            Logger.debug("Server {} already exists", server.getId());
+            return false;
+        }
     }
 
     /**
@@ -208,7 +215,7 @@ public class StateManager {
         this.registeredUsers.put(name, password);
         return true;
       }else{
-        Logger.debug("User {} allready exists as registered user", name);
+        Logger.debug("User {} already exists as registered user", name);
         return false;
       }
     }
