@@ -10,6 +10,8 @@ import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
 import org.apache.commons.csv.*;
 import java.nio.charset.Charset;
+
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
@@ -31,7 +33,6 @@ public class Main {
         ArgumentParser parser = configureArgumentParser();
         parseRegisteredUsers();
 
-
         Namespace arguments = null;
         try {
             arguments = parser.parseArgs(args);
@@ -50,7 +51,7 @@ public class Main {
         configureSSL();
 
         try {
-            processServers(readConfiguration(arguments.get("l")));
+            processServers(readConfiguration(arguments.get("l")), arguments.getBoolean("add"));
         } catch (Exception ex) {
             Logger.error(ex.getMessage());
             System.exit(1);
@@ -93,6 +94,11 @@ public class Main {
                 .action(Arguments.storeTrue())
                 .help("enables verbose (debugging) output");
 
+        parser.addArgument("-a", "--add")
+                .required(false)
+                .action(Arguments.storeTrue())
+                .help("starts server as an addition to system");
+
         parser.addArgument("-n", "--name")
                 .required(true)
                 .type(String.class)
@@ -130,12 +136,14 @@ public class Main {
         return returnArray;
     }
 
+
+
     /**
      * Processes configuration to learn about other servers
      *
      * @param configurationLines A list of tab delimited configuration options
      */
-    private static void processServers(List<String> configurationLines) throws Exception {
+    private static void processServers(List<String> configurationLines, Boolean additional) throws Exception {
         Logger.debug("Beginning config processing");
         int localPort = 0;
 
@@ -160,9 +168,14 @@ public class Main {
             // Add our found coordination server
             StateManager.getInstance().addServer(currentServer);
         }
+
         Logger.debug("Config loaded, validating connectivity");
 
         validateConnectivity();
+
+        if (additional) {
+            processAdditional();
+        }
 
         informServersOfMainHall();
 
@@ -171,6 +184,22 @@ public class Main {
         Logger.debug("All servers reached. Chat service now available");
 
         Logger.debug("Finished config processing");
+    }
+
+    private static void processAdditional() throws Exception {
+        String serverId = StateManager.getInstance().getThisServerId();
+        String hostname = StateManager.getInstance().getThisCoordinationServer().getHostname();
+        int coordPort = StateManager.getInstance().getThisCoordinationServer().getCoordinationPort();
+        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort);
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
+                continue;
+            }
+
+            coordinationServer.sendMessage(newServerRequestMessage);
+            break;
+        }
     }
 
     private static void informServersOfMainHall() throws Exception {
@@ -208,7 +237,7 @@ public class Main {
     }
 
     /**
-     * Parses the registed users
+     * Parses the registered users
      */
     private static void parseRegisteredUsers() {
 

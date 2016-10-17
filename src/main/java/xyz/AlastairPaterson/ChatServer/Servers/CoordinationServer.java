@@ -9,6 +9,7 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
@@ -65,7 +66,7 @@ public class CoordinationServer {
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
             socket = SocketServices.buildServerSocket(this.coordinationPort);
-            Logger.info("Recieving co-ordination port is {}", this.coordinationPort);
+            Logger.info("Receiving co-ordination port is {}", this.coordinationPort);
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
@@ -115,6 +116,15 @@ public class CoordinationServer {
      */
     public int getClientPort() {
         return clientPort;
+    }
+
+    /**
+     * The coordination port of the server
+     *
+     * @return The coordination port
+     */
+    public int getCoordinationPort() {
+        return coordinationPort;
     }
 
     /**
@@ -208,6 +218,10 @@ public class CoordinationServer {
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
                     break;
+                case "newServerRequest":
+                    processNewServerRequest(jsonSerializer.fromJson(receivedData, NewServerRequestMessage.class));
+                    break;
+
             }
 
             SocketServices.writeToSocket(client, jsonSerializer.toJson(replyObject));
@@ -236,7 +250,7 @@ public class CoordinationServer {
         }
 
       }else{
-        Logger.info( "User {} is allready registered", message.getIdentity() );
+        Logger.info( "User {} is already registered", message.getIdentity() );
       }
     }
 
@@ -319,5 +333,15 @@ public class CoordinationServer {
      */
     private Object processHelloMessage() {
         return new HelloMessage();
+    }
+
+
+    /**
+     * Processes a newServerRequest message
+     *
+     * @param newServerRequestMessage The received message
+     */
+    private void processNewServerRequest(NewServerRequestMessage newServerRequestMessage) {
+        Logger.info("New server request received");
     }
 }
