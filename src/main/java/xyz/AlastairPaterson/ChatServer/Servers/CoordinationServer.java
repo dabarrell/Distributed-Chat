@@ -1,6 +1,7 @@
 package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
+import jdk.nashorn.internal.objects.Global;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
@@ -9,6 +10,7 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
@@ -226,6 +228,8 @@ public class CoordinationServer {
                 case "newServerRequest":
                     processNewServerRequest(jsonSerializer.fromJson(receivedData, NewServerRequestMessage.class));
                     break;
+                case "globallock":
+                    replyObject = processGlobalLockRequest(jsonSerializer.fromJson(receivedData, GlobalLockMessage.class));
 
             }
 
@@ -355,24 +359,85 @@ public class CoordinationServer {
                 newServerRequestMessage.getClientPort(),
                 false);
 
+        GlobalLockMessage lockRequest = new GlobalLockMessage(this.id, newServer);
+
         if (StateManager.getInstance().addServer(newServer)) {
             // Server didn't exist and was added
             try{
+                boolean allServersApprove = true;
+
+                // Ask servers if the name is available
                 for(CoordinationServer server : StateManager.getInstance().getServers().stream()
                         .filter(x -> !x.getId().equalsIgnoreCase(this.id))
                         .filter(x -> !x.getId().equalsIgnoreCase(newServer.getId()))
                         .collect(Collectors.toList())){
-//            server.sendMessageWithoutReply(message);
+                    GlobalLockMessage response = jsonSerializer.fromJson(server.sendMessage(lockRequest), GlobalLockMessage.class);
+                    if (!response.isApproved()) {
+                        allServersApprove = false;
+                        break;
+                    }
                 }
+
+                lockRequest.setApproved(allServersApprove);
+                newServer.sendMessage(lockRequest);
+                newServer.begin();
+
             }catch( Exception e ){
                 Logger.error(e);
             }
 
         }else{
             Logger.info( "Server {} is already registered", newServerRequestMessage.getServerId() );
-
+            lockRequest.setApproved(false);
+            try {
+                newServer.sendMessage(lockRequest);
+            } catch (Exception e) {
+                Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+            }
         }
     }
+
+    /**
+     * Processes a global lock message
+     *
+     * @param globalLockMessage Incoming lock request
+     * @return Updated lock request, or null if this is the server in question
+     */
+    private GlobalLockMessage processGlobalLockRequest(GlobalLockMessage globalLockMessage) {
+        if (globalLockMessage.getNewServerId().equalsIgnoreCase(this.id)) {
+            if (!globalLockMessage.isApproved()) {
+                Logger.error("This serverId already exists - shutting down");
+                System.exit(1);
+            } else {
+                Logger.info("New serverId approved");
+                // TODO: 18/10/16 handle approved id
+            }
+
+            return null;
+        } else if (!globalLockMessage.getServerId().equalsIgnoreCase(this.id)) {
+            CoordinationServer newServer = new CoordinationServer(globalLockMessage.getNewServerId(),
+                    globalLockMessage.getHost(),
+                    globalLockMessage.getCoordPort(),
+                    globalLockMessage.getClientPort(),
+                    false);
+
+            if (StateManager.getInstance().addServer(newServer)) {
+                // Server didn't already exist, was added
+                // TODO: 18/10/16 Add server locks!
+                Logger.info("Server {} added and locked", newServer.getId());
+                globalLockMessage.setApproved(true);
+            } else {
+                Logger.info("Server {} already exists - lock denied", newServer.getId());
+                globalLockMessage.setApproved(false);
+            }
+
+            return globalLockMessage;
+        } else {
+            return null;
+        }
+    }
+
+    // TODO: 18/10/16 Add lock release 
 
     @Override
     public boolean equals(Object o) {

@@ -1,6 +1,7 @@
 package xyz.AlastairPaterson.ChatServer.Messages.NewServer;
 
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
+import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 
 /**
  * Represents global lock message
@@ -12,6 +13,20 @@ public class GlobalLockMessage extends Message {
     private int coordPort;
     private int clientPort;
     private String approved;
+
+    /**
+     * Creates a new coordination request message
+     * @param serverId The server requesting coordination
+     * @param newServer The new coordination server
+     */
+    public GlobalLockMessage(String serverId, CoordinationServer newServer) {
+        super("globallock");
+        this.serverId = serverId;
+        this.newServerId = newServer.getId();
+        this.host = newServer.getHostname();
+        this.coordPort = newServer.getCoordinationPort();
+        this.clientPort = newServer.getClientPort();
+    }
 
     /**
      * Creates a new coordination request message
@@ -102,5 +117,13 @@ public class GlobalLockMessage extends Message {
      */
     public String getNewServerId() {
         return newServerId;
+    }
+
+    /**
+     * Sets approved
+     * @param approved True if request approved, false otherwise
+     */
+    public void setApproved(boolean approved) {
+        this.approved = approved ? "true" : "false";
     }
 }

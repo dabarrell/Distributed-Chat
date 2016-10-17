@@ -52,6 +52,7 @@ public class StateManager {
      * @param server The new server being added
      */
     public synchronized boolean addServer(CoordinationServer server) {
+        // TODO: 18/10/16 Check for locks!
         if(!this.servers.contains(server)){
             Logger.info("Adding server {} to server list", server.getId());
             this.servers.add(server);
