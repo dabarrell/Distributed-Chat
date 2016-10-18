@@ -11,5 +11,9 @@ public enum LockType {
     /**
      * Locks a room
      */
-    RoomLock
+    RoomLock,
+    /**
+     * Locks a server
+     */
+    ServerLock
 }

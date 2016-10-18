@@ -1,5 +1,6 @@
 package xyz.AlastairPaterson.ChatServer;
 
+import com.google.gson.Gson;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -11,6 +12,8 @@ import org.pmw.tinylog.Logger;
 import org.apache.commons.csv.*;
 import java.nio.charset.Charset;
 
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalReleaseMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
@@ -19,9 +22,11 @@ import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
 import xyz.AlastairPaterson.ChatServer.Servers.UserAdditionServer;
 
 import javax.naming.ConfigurationException;
+import javax.swing.plaf.nimbus.State;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -165,14 +170,14 @@ public class Main {
                     serverAddress,
                     coordinationPort,
                     clientPort,
-                    isLocalServer,
                     heartbeatPort,
-                    userAdditionPort);
+                    userAdditionPort,
+                    isLocalServer);
 
             localPort += isLocalServer ? clientPort : 0;
 
             // Add our found coordination server
-            if (StateManager.getInstance().addServer(currentServer)) {
+            if (StateManager.getInstance().addServer(currentServer) && !isLocalServer) {
                 currentServer.begin();
             }
         }
@@ -200,14 +205,18 @@ public class Main {
         String hostname = StateManager.getInstance().getThisCoordinationServer().getHostname();
         int coordPort = StateManager.getInstance().getThisCoordinationServer().getCoordinationPort();
         int clientPort = StateManager.getInstance().getThisCoordinationServer().getClientPort();
-        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort, clientPort);
+        int heartbeatPort = StateManager.getInstance().getThisCoordinationServer().getHeartbeatPort();
+        int userAdditionPort = StateManager.getInstance().getThisCoordinationServer().getUserAdditionPort();
 
-        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
-            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
+        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort, clientPort, heartbeatPort, userAdditionPort);
+
+        for (CoordinationServer server : StateManager.getInstance().getServers()) {
+            if (server.equals(StateManager.getInstance().getThisCoordinationServer())) {
                 continue;
             }
 
-            coordinationServer.sendMessage(newServerRequestMessage);
+            server.sendMessage(newServerRequestMessage);
+
             break;
         }
     }

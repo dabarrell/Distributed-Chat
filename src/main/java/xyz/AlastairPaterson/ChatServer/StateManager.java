@@ -52,14 +52,15 @@ public class StateManager {
      * @param server The new server being added
      */
     public synchronized boolean addServer(CoordinationServer server) {
-        // TODO: 18/10/16 Check for locks!
-        if(!this.servers.contains(server)){
+
+        if (servers.stream().anyMatch(x -> x.getId().equalsIgnoreCase(server.getId()))
+                || lockedEntities.stream().anyMatch(x -> x.isLocked(server.getId(), LockType.ServerLock))) {
+            Logger.debug("Server {} already exists", server.getId());
+            return false;
+        }else{
             Logger.info("Adding server {} to server list", server.getId());
             this.servers.add(server);
             return true;
-        }else{
-            Logger.debug("Server {} already exists", server.getId());
-            return false;
         }
     }
 

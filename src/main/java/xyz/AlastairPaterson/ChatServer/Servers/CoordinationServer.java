@@ -1,7 +1,6 @@
 package xyz.AlastairPaterson.ChatServer.Servers;
 
 import com.google.gson.Gson;
-import jdk.nashorn.internal.objects.Global;
 import org.pmw.tinylog.Logger;
 import xyz.AlastairPaterson.ChatServer.Concepts.ChatRoom;
 import xyz.AlastairPaterson.ChatServer.Concepts.EntityLock;
@@ -11,6 +10,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalReleaseMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
@@ -23,8 +23,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.stream.Collectors;
 
 /**
@@ -64,9 +62,8 @@ public class CoordinationServer {
      * @param coordinationPort The port for coordination operations
      * @param clientPort       The port for client operations
      * @param localInstance    If this is a locally running server
-     * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance, int heartbeatPort, int userAdditionPort) throws Exception {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, int heartbeatPort, int userAdditionPort, boolean localInstance) {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
@@ -161,6 +158,16 @@ public class CoordinationServer {
     public int getHeartbeatPort() {
         return heartbeatPort;
     }
+
+    /**
+     * The user addition port of the server
+     *
+     * @return The user addition port
+     */
+    public int getUserAdditionPort() {
+        return userAdditionPort;
+    }
+
 
     /**
      * Sends a message to the specified coordination server
@@ -258,6 +265,10 @@ public class CoordinationServer {
                     break;
                 case "globallock":
                     replyObject = processGlobalLockRequest(jsonSerializer.fromJson(receivedData, GlobalLockMessage.class));
+                    break;
+                case "globalrelease":
+                    processUnlockGlobalRequest(jsonSerializer.fromJson(receivedData, GlobalReleaseMessage.class));
+                    break;
 
             }
 
@@ -281,6 +292,7 @@ public class CoordinationServer {
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()
               .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
 //            server.sendMessageWithoutReply(message);
+              // TODO: 19/10/16 Why is this not sent? Has this been moved to user addition server?
           }
         }catch( Exception e ){
           Logger.error(e);
@@ -385,11 +397,16 @@ public class CoordinationServer {
                 newServerRequestMessage.getHost(),
                 newServerRequestMessage.getCoordPort(),
                 newServerRequestMessage.getClientPort(),
+                newServerRequestMessage.getHeartbeatPort(),
+                newServerRequestMessage.getUserAdditionPort(),
                 false);
 
         GlobalLockMessage lockRequest = new GlobalLockMessage(this.id, newServer);
 
         if (StateManager.getInstance().addServer(newServer)) {
+            // Add lock on server
+            StateManager.getInstance().addLock(newServer.getId(), newServer.getId(), LockType.ServerLock);
+
             // Server didn't exist and was added
             try{
                 boolean allServersApprove = true;
@@ -408,7 +425,6 @@ public class CoordinationServer {
 
                 lockRequest.setApproved(allServersApprove);
                 newServer.sendMessage(lockRequest);
-                newServer.begin();
 
             }catch( Exception e ){
                 Logger.error(e);
@@ -437,22 +453,45 @@ public class CoordinationServer {
                 Logger.error("This serverId already exists - shutting down");
                 System.exit(1);
             } else {
-                Logger.info("New serverId approved");
-                // TODO: 18/10/16 handle approved id
+                Logger.info("New serverId approved - sending global release");
+
+                GlobalReleaseMessage releaseMessage = new GlobalReleaseMessage(this.id);
+
+                for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+                        .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+                        .collect(Collectors.toList())){
+
+                    try {
+                        server.sendMessage(releaseMessage);
+                        this.begin();
+                    } catch (Exception e) {
+                        Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                    }
+
+                }
+
             }
 
             return null;
+
         } else if (!globalLockMessage.getServerId().equalsIgnoreCase(this.id)) {
+            // This server is receiving a lock request
             CoordinationServer newServer = new CoordinationServer(globalLockMessage.getNewServerId(),
                     globalLockMessage.getHost(),
                     globalLockMessage.getCoordPort(),
                     globalLockMessage.getClientPort(),
+                    globalLockMessage.getHeartbeatPort(),
+                    globalLockMessage.getUserAdditionPort(),
                     false);
 
             if (StateManager.getInstance().addServer(newServer)) {
                 // Server didn't already exist, was added
-                // TODO: 18/10/16 Add server locks!
+
+                // Add lock on server
+                StateManager.getInstance().addLock(newServer.getId(), newServer.getId(), LockType.ServerLock);
+
                 Logger.info("Server {} added and locked", newServer.getId());
+
                 globalLockMessage.setApproved(true);
             } else {
                 Logger.info("Server {} already exists - lock denied", newServer.getId());
@@ -465,7 +504,28 @@ public class CoordinationServer {
         }
     }
 
-    // TODO: 18/10/16 Add lock release
+    /**
+     * Processes a global release message
+     *
+     * @param releaseMessage Incoming release
+     */
+    private void processUnlockGlobalRequest(GlobalReleaseMessage releaseMessage) {
+        // Remove lock
+        StateManager.getInstance().removeLock(new EntityLock(releaseMessage.getServerId(),
+                releaseMessage.getServerId(),
+                LockType.ServerLock));
+
+        Logger.debug("Lock removed for server {}", releaseMessage.getServerId());
+
+        CoordinationServer newServer = StateManager.getInstance().getServers().stream()
+                .filter(x -> x.getId().equals(releaseMessage.getServerId())).findFirst().get();
+
+        try {
+            newServer.begin();
+        } catch (Exception e) {
+            Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+        }
+    }
 
     @Override
     public boolean equals(Object o) {

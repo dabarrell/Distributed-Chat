@@ -12,6 +12,8 @@ public class GlobalLockMessage extends Message {
     private String host;
     private int coordPort;
     private int clientPort;
+    private int heartbeatPort;
+    private int userAdditionPort;
     private String approved;
 
     /**
@@ -26,6 +28,8 @@ public class GlobalLockMessage extends Message {
         this.host = newServer.getHostname();
         this.coordPort = newServer.getCoordinationPort();
         this.clientPort = newServer.getClientPort();
+        this.heartbeatPort = newServer.getHeartbeatPort();
+        this.userAdditionPort = newServer.getUserAdditionPort();
     }
 
     /**
@@ -35,14 +39,18 @@ public class GlobalLockMessage extends Message {
      * @param host The new host
      * @param coordPort The new coordination port
      * @param clientPort The new client port
+     * @param heartbeatPort The new client heartbeat port
+     * @param userAdditionPort The new client user addition port
      */
-    public GlobalLockMessage(String serverId, String newServerId, String host, int coordPort, int clientPort) {
+    public GlobalLockMessage(String serverId, String newServerId, String host, int coordPort, int clientPort, int heartbeatPort, int userAdditionPort) {
         super("globallock");
         this.serverId = serverId;
         this.newServerId = newServerId;
         this.host = host;
         this.coordPort = coordPort;
         this.clientPort = clientPort;
+        this.heartbeatPort = heartbeatPort;
+        this.userAdditionPort = userAdditionPort;
     }
 
     /**
@@ -52,15 +60,19 @@ public class GlobalLockMessage extends Message {
      * @param host The new host
      * @param coordPort The new coordination port
      * @param clientPort The new client port
+     * @param heartbeatPort The new client heartbeat port
+     * @param userAdditionPort The new client user addition port
      * @param isApproved True if identity approved, false otherwise
      */
-    public GlobalLockMessage(String serverId, String newServerId, String host, int coordPort, int clientPort, boolean isApproved) {
+    public GlobalLockMessage(String serverId, String newServerId, String host, int coordPort, int clientPort, int heartbeatPort, int userAdditionPort, boolean isApproved) {
         super("globallock");
         this.serverId = serverId;
         this.newServerId = newServerId;
         this.host = host;
         this.coordPort = coordPort;
         this.clientPort = clientPort;
+        this.heartbeatPort = heartbeatPort;
+        this.userAdditionPort = userAdditionPort;
         this.approved = isApproved ? "true" : "false";
     }
 
@@ -117,6 +129,22 @@ public class GlobalLockMessage extends Message {
      */
     public String getNewServerId() {
         return newServerId;
+    }
+
+    /**
+     * Gets heartbeatPort
+     * @return the heartbeat port of the new server
+     */
+    public int getHeartbeatPort() {
+        return heartbeatPort;
+    }
+
+    /**
+     * Gets userAdditionPort
+     * @return the user addition port of the new server
+     */
+    public int getUserAdditionPort() {
+        return userAdditionPort;
     }
 
     /**
