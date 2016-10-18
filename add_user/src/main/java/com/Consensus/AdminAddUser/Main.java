@@ -150,7 +150,7 @@ public class Main {
            Logger.info("Parsing config ..");
            for (CSVRecord csvRecord : parser) {
              Logger.info("Adding server {}", csvRecord.get(1));
-             rootServers.add(new RootServer(csvRecord.get(1), Integer.parseInt(csvRecord.get(3))));
+             rootServers.add(new RootServer(csvRecord.get(1), Integer.parseInt(csvRecord.get(5))));
           }
         }
         catch(IOException e) {
