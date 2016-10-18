@@ -12,6 +12,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalReleaseMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.RequestRoomListMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
@@ -301,6 +302,9 @@ public class CoordinationServer {
                 case "globalrelease":
                     processUnlockGlobalRequest(jsonSerializer.fromJson(receivedData, GlobalReleaseMessage.class));
                     break;
+                case "requestrooms":
+                    processRoomListRequest(jsonSerializer.fromJson(receivedData, RequestRoomListMessage.class));
+                    break;
 
             }
 
@@ -506,6 +510,7 @@ public class CoordinationServer {
                     Logger.debug("Attempting to begin and finish load");
                     begin();
                     finishLoad();
+                    requestRooms();
                 } catch (Exception e) {
                     Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
                 }
@@ -564,6 +569,52 @@ public class CoordinationServer {
             newServer.begin();
         } catch (Exception e) {
             Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+        }
+    }
+
+    private void requestRooms() throws Exception {
+        RequestRoomListMessage message = new RequestRoomListMessage(this.id);
+
+        CoordinationServer server = StateManager.getInstance().getServers().stream()
+                .filter(x -> !x.getId().equalsIgnoreCase(StateManager.getInstance().getThisServerId()))
+                .findFirst()
+                .get();
+
+        server.sendMessageWithoutReply(message);
+    }
+
+    private void processRoomListRequest(RequestRoomListMessage message) {
+        if (message.getRoomId() == null) {
+            Logger.debug("Room list request received");
+
+            CoordinationServer server = StateManager.getInstance().getServers().stream()
+                    .filter(x -> x.getId().equalsIgnoreCase(message.getServerId()))
+                    .findFirst()
+                    .get();
+
+            for (ChatRoom room : StateManager.getInstance().getRooms().stream()
+                    .filter(x -> !x.getOwnerServer().getId().equalsIgnoreCase(server.getId()))
+                    .collect(Collectors.toList())) {
+
+                RequestRoomListMessage response = new RequestRoomListMessage(this.id, room.getRoomId(), room.getOwnerServer().getId());
+
+                try {
+                    server.sendMessageWithoutReply(response);
+                } catch (Exception e) {
+                    Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                }
+            }
+
+        } else if (!message.getHostServerId().equalsIgnoreCase(this.getId())) {
+            CoordinationServer owningServer = StateManager.getInstance().getServers()
+                    .stream()
+                    .filter(x -> x.getId().equalsIgnoreCase(message.getHostServerId()))
+                    .findFirst()
+                    .get();
+
+            StateManager.getInstance().getRooms().add(new ChatRoom(message.getRoomId(), owningServer));
+
+            Logger.debug("New room added: {} on {}", message.getRoomId(), message.getHostServerId());
         }
     }
 

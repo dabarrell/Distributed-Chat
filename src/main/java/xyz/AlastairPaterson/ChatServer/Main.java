@@ -192,15 +192,12 @@ public class Main {
 
         NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort, clientPort, heartbeatPort, userAdditionPort);
 
-        for (CoordinationServer server : StateManager.getInstance().getServers()) {
-            if (server.equals(StateManager.getInstance().getThisCoordinationServer())) {
-                continue;
-            }
+        CoordinationServer server = StateManager.getInstance().getServers().stream()
+                .filter(x -> !x.getId().equalsIgnoreCase(StateManager.getInstance().getThisServerId()))
+                .findFirst()
+                .get();
 
-            server.sendMessage(newServerRequestMessage);
-
-            break;
-        }
+        server.sendMessage(newServerRequestMessage);
     }
 
     /**
@@ -220,7 +217,7 @@ public class Main {
             Logger.warn(sb.toString());
             Thread.sleep(3000);
         }
-
+        
         StateManager.getInstance().getThisCoordinationServer().startHeartbeatServer();
     }
 
