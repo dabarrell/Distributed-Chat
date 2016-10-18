@@ -89,16 +89,15 @@ class HeartbeatServer {
      * Listens for and responds to heartbeat messages
      */
     private void respondHeartbeat() {
-        //TODO: should try/catch be on the inside of the loop? Probably
-        try {
-            while (true) {
+        while (true) {
+            try {
                 SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
                 String heartbeat = SocketServices.readFromSocket(clientSocket);
 
                 SocketServices.writeToSocket(clientSocket, heartbeat);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }

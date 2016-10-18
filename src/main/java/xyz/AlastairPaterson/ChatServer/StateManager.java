@@ -234,6 +234,7 @@ public class StateManager {
     public synchronized void removeServer(CoordinationServer s) {
         this.getRooms().removeIf(x -> x.getOwnerServer().equals(s));
         this.getServers().remove(s);
+        this.lockedEntities.removeIf(x -> x.getLockingServer().equals(s.getId()));
     }
 
 }
