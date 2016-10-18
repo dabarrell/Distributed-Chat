@@ -37,6 +37,10 @@ public class CoordinationServer {
 
     private final int coordinationPort;
 
+    private final int heartbeatPort;
+
+    private final int userAdditionPort;
+
     private final String hostname;
 
     private final String id;
@@ -46,6 +50,11 @@ public class CoordinationServer {
     private SSLServerSocket socket;
 
     private final Gson jsonSerializer = new Gson();
+
+    private HeartbeatServer heartbeatServer;
+
+    private UserAdditionServer userAdditionServer;
+
 
     /**
      * Creates a new coordination server
@@ -57,11 +66,13 @@ public class CoordinationServer {
      * @param localInstance    If this is a locally running server
      * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance) {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance, int heartbeatPort, int userAdditionPort) throws Exception {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
         this.clientPort = clientPort;
+        this.heartbeatPort = heartbeatPort;
+        this.userAdditionPort = userAdditionPort;
         this.localInstance = localInstance;
     }
 
@@ -80,6 +91,10 @@ public class CoordinationServer {
             ChatRoom mainHall = new ChatRoom("MainHall-" + id, this);
             StateManager.getInstance().getRooms().add(mainHall);
             StateManager.getInstance().setMainHall(mainHall);
+
+            this.heartbeatServer = new HeartbeatServer(this.heartbeatPort);
+            this.userAdditionServer = new UserAdditionServer(StateManager.getInstance().getThisServerId(),this.userAdditionPort);
+
         } else {
             // Check we can talk to this server
             workerThread = new Thread(this::validateConnectivity);
@@ -96,6 +111,10 @@ public class CoordinationServer {
      */
     public boolean isConnected() {
         return connected;
+    }
+
+    public void startHeartbeatServer() {
+        this.heartbeatServer.startPolling();
     }
 
     /**
@@ -132,6 +151,15 @@ public class CoordinationServer {
      */
     public int getCoordinationPort() {
         return coordinationPort;
+    }
+
+    /**
+     * The heartbeat listening port of the server
+     *
+     * @return The heartbeat port
+     */
+    public int getHeartbeatPort() {
+        return heartbeatPort;
     }
 
     /**
@@ -437,7 +465,7 @@ public class CoordinationServer {
         }
     }
 
-    // TODO: 18/10/16 Add lock release 
+    // TODO: 18/10/16 Add lock release
 
     @Override
     public boolean equals(Object o) {

@@ -16,6 +16,7 @@ import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMes
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
+import xyz.AlastairPaterson.ChatServer.Servers.UserAdditionServer;
 
 import javax.naming.ConfigurationException;
 import java.io.*;
@@ -56,6 +57,7 @@ public class Main {
             Logger.error(ex.getMessage());
             System.exit(1);
         }
+
 
         Logger.info("Chat server now available");
     }
@@ -154,6 +156,8 @@ public class Main {
             boolean isLocalServer = configuration[0].equalsIgnoreCase(StateManager.getInstance().getThisServerId());
             int coordinationPort = Integer.parseInt(configuration[3]);
             int clientPort = Integer.parseInt(configuration[2]);
+            int heartbeatPort = Integer.parseInt(configuration[4]);
+            int userAdditionPort = Integer.parseInt(configuration[5]);
             String serverName = configuration[0];
             String serverAddress = configuration[1];
 
@@ -161,7 +165,9 @@ public class Main {
                     serverAddress,
                     coordinationPort,
                     clientPort,
-                    isLocalServer);
+                    isLocalServer,
+                    heartbeatPort,
+                    userAdditionPort);
 
             localPort += isLocalServer ? clientPort : 0;
 
@@ -238,6 +244,7 @@ public class Main {
             Logger.warn(sb.toString());
             Thread.sleep(3000);
         }
+        StateManager.getInstance().getThisCoordinationServer().startHeartbeatServer();
     }
 
     /**
