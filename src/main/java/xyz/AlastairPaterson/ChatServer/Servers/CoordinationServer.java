@@ -53,6 +53,8 @@ public class CoordinationServer {
 
     private UserAdditionServer userAdditionServer;
 
+    private Boolean begun = false;
+
 
     /**
      * Creates a new coordination server
@@ -74,6 +76,10 @@ public class CoordinationServer {
     }
 
     public void begin() throws Exception {
+        if (begun) {
+            Logger.warn("Already begun");
+            return;
+        }
         Thread workerThread;
 
         if (localInstance) {
@@ -99,6 +105,32 @@ public class CoordinationServer {
         }
 
         workerThread.start();
+        begun = true;
+    }
+
+    public void finishLoad() throws Exception {
+        informServersOfMainHall();
+
+        new ClientListener(StateManager.getInstance().getThisCoordinationServer().getClientPort());
+
+        Logger.debug("All servers reached. Chat service now available");
+
+        Logger.debug("Finished config processing");
+    }
+
+    private void informServersOfMainHall() throws Exception {
+        String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
+        RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
+        RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
+                continue;
+            }
+
+            coordinationServer.sendMessage(lockMessage);
+            coordinationServer.sendMessage(unlockMessage);
+        }
     }
 
     /**
@@ -424,7 +456,8 @@ public class CoordinationServer {
                 }
 
                 lockRequest.setApproved(allServersApprove);
-                newServer.sendMessage(lockRequest);
+                newServer.sendMessageWithoutReply(lockRequest);
+
 
             }catch( Exception e ){
                 Logger.error(e);
@@ -462,12 +495,19 @@ public class CoordinationServer {
                         .collect(Collectors.toList())){
 
                     try {
-                        server.sendMessage(releaseMessage);
-                        this.begin();
+                        server.sendMessageWithoutReply(releaseMessage);
                     } catch (Exception e) {
                         Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
                     }
 
+                }
+
+                try {
+                    Logger.debug("Attempting to begin and finish load");
+                    begin();
+                    finishLoad();
+                } catch (Exception e) {
+                    Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
                 }
 
             }

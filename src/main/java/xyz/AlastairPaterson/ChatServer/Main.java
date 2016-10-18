@@ -1,6 +1,5 @@
 package xyz.AlastairPaterson.ChatServer;
 
-import com.google.gson.Gson;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -12,21 +11,13 @@ import org.pmw.tinylog.Logger;
 import org.apache.commons.csv.*;
 import java.nio.charset.Charset;
 
-import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalReleaseMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
-import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
-import xyz.AlastairPaterson.ChatServer.Servers.UserAdditionServer;
 
 import javax.naming.ConfigurationException;
-import javax.swing.plaf.nimbus.State;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Main {
 
@@ -152,7 +143,6 @@ public class Main {
      */
     private static void processServers(List<String> configurationLines, Boolean additional) throws Exception {
         Logger.debug("Beginning config processing");
-        int localPort = 0;
 
         for (String currentLine : configurationLines) {
             Logger.debug("Adding config: {}", currentLine);
@@ -174,10 +164,8 @@ public class Main {
                     userAdditionPort,
                     isLocalServer);
 
-            localPort += isLocalServer ? clientPort : 0;
-
             // Add our found coordination server
-            if (StateManager.getInstance().addServer(currentServer) && !isLocalServer) {
+            if (StateManager.getInstance().addServer(currentServer)) {
                 currentServer.begin();
             }
         }
@@ -189,15 +177,9 @@ public class Main {
         if (additional) {
             processAdditional();
         } else {
-            // TODO should this be in the CoordinationServer thread?
-            informServersOfMainHall();
+            StateManager.getInstance().getThisCoordinationServer().finishLoad();
         }
 
-        new ClientListener(localPort);
-
-        Logger.debug("All servers reached. Chat service now available");
-
-        Logger.debug("Finished config processing");
     }
 
     private static void processAdditional() throws Exception {
@@ -221,21 +203,6 @@ public class Main {
         }
     }
 
-    private static void informServersOfMainHall() throws Exception {
-        String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
-        RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
-        RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);
-
-        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
-            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
-                continue;
-            }
-
-            coordinationServer.sendMessage(lockMessage);
-            coordinationServer.sendMessage(unlockMessage);
-        }
-    }
-
     /**
      * Validates connectivity to other configured servers
      *
@@ -253,6 +220,7 @@ public class Main {
             Logger.warn(sb.toString());
             Thread.sleep(3000);
         }
+
         StateManager.getInstance().getThisCoordinationServer().startHeartbeatServer();
     }
 
