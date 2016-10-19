@@ -218,7 +218,7 @@ public class ClientConnection {
                 this.identity.getCurrentRoom().leave(this.identity);
             }
 
-            StateManager.getInstance().getHostedIdentities().remove(this.identity);
+			StateManager.getInstance().getHostedIdentities().remove(this.identity);
         } catch (Exception e) {
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }
