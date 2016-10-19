@@ -54,7 +54,7 @@ class HeartbeatServer {
                     }
                 }
             }
-        }, 0, POLL_INTERVAL_SECONDS * 1000);
+        }, POLL_INTERVAL_SECONDS * 1000, POLL_INTERVAL_SECONDS * 1000);
     }
 
     /**
