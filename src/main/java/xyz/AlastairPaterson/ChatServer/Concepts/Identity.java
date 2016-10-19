@@ -13,7 +13,6 @@ public class Identity {
     private ChatRoom currentRoom;
     private ChatRoom ownedRoom;
     private final ClientConnection connection;
-    private boolean disconnected;
 
     /**
      * Creates a new identity for a user
@@ -24,19 +23,10 @@ public class Identity {
     public Identity(String screenName, ChatRoom currentRoom, ClientConnection connection) throws Exception {
         this.screenName = screenName;
         this.connection = connection;
-        this.disconnected = false;
         try {
             currentRoom.join(this);
         } catch (RemoteChatRoomException | IdentityOwnsRoomException ignore) { }
         connection.finalizeConnection(this);
-    }
-
-    public boolean isDisconnected() {
-        return disconnected;
-    }
-
-    public void setDisconnected(boolean disconnected) {
-        this.disconnected = disconnected;
     }
 
     /**

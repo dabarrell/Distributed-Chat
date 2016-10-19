@@ -94,7 +94,6 @@ public class ClientConnection {
             Logger.debug("Coms loop exited - cleaning up");
         } catch (Exception e) {
             Logger.error("IOException occurred during client communication - terminating client");
-            identity.setDisconnected(true);
         }
         finally {
             if (!this.noQuit) {
@@ -214,11 +213,12 @@ public class ClientConnection {
      */
     private void processQuit() {
         try {
+            this.identity.getCurrentRoom().leave(this.identity);
             if (this.identity.getCurrentRoom() != null) {
                 this.identity.getCurrentRoom().leave(this.identity);
             }
 
-			StateManager.getInstance().getHostedIdentities().remove(this.identity);
+            StateManager.getInstance().getHostedIdentities().remove(this.identity);
         } catch (Exception e) {
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }

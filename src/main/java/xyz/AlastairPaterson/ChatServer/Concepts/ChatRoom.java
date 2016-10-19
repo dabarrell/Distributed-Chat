@@ -93,7 +93,7 @@ public class ChatRoom {
      * @throws IdentityOwnsRoomException If user already owns a room, can't join another one
      */
     public void join(Identity identity) throws Exception {
-        if (identity.getCurrentRoom().getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
+        if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
             throw new IdentityOwnsRoomException();
         }
 
@@ -151,7 +151,7 @@ public class ChatRoom {
      */
     public void broadcast(Message message, Identity ignore) throws IOException {
         for (Identity member : this.members) {
-            if (!member.equals(ignore) || member.isDisconnected()) {
+            if (!member.equals(ignore)) {
                 member.sendMessage(message);
             }
         }
