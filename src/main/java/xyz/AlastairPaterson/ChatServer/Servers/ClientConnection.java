@@ -132,7 +132,7 @@ public class ClientConnection {
             this.shouldRun = false;
             this.noQuit = true;
         } catch (IdentityOwnsRoomException e) {
-            this.sendMessage(new RoomChangeRouteResponse(this.identity.getCurrentRoom()));
+            this.sendMessage(new RoomChangeClientResponse(this.identity, this.identity.getCurrentRoom(), this.identity.getCurrentRoom()));
         }
     }
 
