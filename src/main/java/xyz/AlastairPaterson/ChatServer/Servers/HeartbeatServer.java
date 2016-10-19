@@ -11,12 +11,14 @@ import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 /**
  * Listens for, replies to and generates heartbeat messages at a set interval
  */
 class HeartbeatServer {
     private SSLServerSocket serverSocket;
+    private String id;
 
     private final Gson jsonSerializer = new Gson();
 
@@ -25,8 +27,9 @@ class HeartbeatServer {
      *
      * @param heartbeatPort The port to listen on
      */
-    HeartbeatServer(int heartbeatPort) throws Exception {
+    HeartbeatServer(int heartbeatPort, String id) throws Exception {
         serverSocket = SocketServices.buildServerSocket(heartbeatPort);
+        this.id = id;
 
         Thread heartbeatThread = new Thread(this::respondHeartbeat, "HeartBeatThread");
         heartbeatThread.start();
@@ -39,23 +42,33 @@ class HeartbeatServer {
         int POLL_INTERVAL_SECONDS = 10;
 
         Timer pollTimer = new Timer("HeartbeatPollThread");
-        pollTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                Logger.debug("Beginning heartbeat");
-                for (CoordinationServer s: StateManager.getInstance().getServers()) {
-                    try {
-                        sendHeartbeat(s);
-                    } catch (ServerFailureException e) {
-                        failServer(s);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }, POLL_INTERVAL_SECONDS * 1000, POLL_INTERVAL_SECONDS * 1000);
+        pollTimer.scheduleAtFixedRate(new HeartBeatPollTask(this.id), 0, POLL_INTERVAL_SECONDS * 1000);
     }
+
+    public class HeartBeatPollTask extends TimerTask{
+      String id;
+      public HeartBeatPollTask(String id){
+        this.id = id;
+      }
+      @Override
+      public void run() {
+          Logger.debug("Beginning heartbeat");
+          for (CoordinationServer s: StateManager.getInstance().getServers().stream()
+              .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+              .collect(Collectors.toList())){
+              try {
+                  sendHeartbeat(s);
+              } catch (ServerFailureException e) {
+                  failServer(s);
+              }
+              catch (Exception e) {
+                  e.printStackTrace();
+              }
+          }
+      }
+    } 
+
+
 
     /**
      * Fails a server, removing it from the list
