@@ -93,11 +93,12 @@ public class ChatRoom {
      * @throws IdentityOwnsRoomException If user already owns a room, can't join another one
      */
     public void join(Identity identity) throws Exception {
-        if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
-            throw new IdentityOwnsRoomException();
-        }
 
         if (identity.getCurrentRoom() != null) {
+            if (identity.getCurrentRoom().getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
+                throw new IdentityOwnsRoomException();
+            }
+
             identity.getCurrentRoom().leave(identity, this);
         }
 
@@ -116,6 +117,16 @@ public class ChatRoom {
 
     public void leave(Identity identity) throws Exception {
         this.leave(identity, null);
+    }
+
+    public void leave(Identity identity, boolean forceful) {
+        if (forceful) {
+            try {
+                this.leave(identity, null);
+            } catch (Exception e) {
+                Logger.debug("Ignoring exception in client leave");
+            }
+        }
     }
 
     public void leave(Identity identity, ChatRoom destination) throws Exception {

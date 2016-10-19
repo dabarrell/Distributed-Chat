@@ -132,7 +132,7 @@ public class ClientConnection {
             this.shouldRun = false;
             this.noQuit = true;
         } catch (IdentityOwnsRoomException e) {
-            this.sendMessage(new RoomChangeRouteResponse(this.identity.getCurrentRoom()));
+            this.sendMessage(new RoomChangeClientResponse(this.identity, this.identity.getCurrentRoom(), this.identity.getCurrentRoom()));
         }
     }
 
@@ -215,11 +215,12 @@ public class ClientConnection {
         try {
             this.identity.getCurrentRoom().leave(this.identity);
             if (this.identity.getCurrentRoom() != null) {
-                this.identity.getCurrentRoom().leave(this.identity);
+                this.identity.getCurrentRoom().leave(this.identity, true);
             }
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
         } catch (Exception e) {
+            e.printStackTrace();
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }
 
