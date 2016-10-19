@@ -84,7 +84,7 @@ git clone git@github.com:alastairpat/COMP90015-A1.git
 cd COMP90015-A1
 
 # Temporary checkout
-#git checkout mihira/master
+git checkout server_addition_debug
 
 # execute server
 killall java

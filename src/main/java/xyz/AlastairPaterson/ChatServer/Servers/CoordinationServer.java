@@ -96,7 +96,7 @@ public class CoordinationServer {
             StateManager.getInstance().getRooms().add(mainHall);
             StateManager.getInstance().setMainHall(mainHall);
 
-            this.heartbeatServer = new HeartbeatServer(this.heartbeatPort);
+            this.heartbeatServer = new HeartbeatServer(this.heartbeatPort,this.id);
             this.userAdditionServer = new UserAdditionServer(StateManager.getInstance().getThisServerId(),this.userAdditionPort);
 
         } else {
@@ -448,6 +448,7 @@ public class CoordinationServer {
                 boolean allServersApprove = true;
 
                 // Ask servers if the name is available
+                Logger.debug("Asking other servers for new sever approval", newServer.getId());
                 for(CoordinationServer server : StateManager.getInstance().getServers().stream()
                         .filter(x -> !x.getId().equalsIgnoreCase(this.id))
                         .filter(x -> !x.getId().equalsIgnoreCase(newServer.getId()))
@@ -455,11 +456,13 @@ public class CoordinationServer {
                     GlobalLockMessage response = jsonSerializer.fromJson(server.sendMessage(lockRequest), GlobalLockMessage.class);
                     if (!response.isApproved()) {
                         allServersApprove = false;
+                        Logger.debug("Other servers dissapproved {}", newServer.getId());
                         break;
                     }
                 }
 
                 lockRequest.setApproved(allServersApprove);
+                Logger.debug("Sending approved message to new server {}", newServer.getId());
                 newServer.sendMessageWithoutReply(lockRequest);
 
 
@@ -521,6 +524,7 @@ public class CoordinationServer {
 
         } else if (!globalLockMessage.getServerId().equalsIgnoreCase(this.id)) {
             // This server is receiving a lock request
+            Logger.debug("Processing globalLockMessage for new server");
             CoordinationServer newServer = new CoordinationServer(globalLockMessage.getNewServerId(),
                     globalLockMessage.getHost(),
                     globalLockMessage.getCoordPort(),

@@ -183,6 +183,7 @@ public class Main {
     }
 
     private static void processAdditional() throws Exception {
+        Logger.debug("Process additional");
         String serverId = StateManager.getInstance().getThisServerId();
         String hostname = StateManager.getInstance().getThisCoordinationServer().getHostname();
         int coordPort = StateManager.getInstance().getThisCoordinationServer().getCoordinationPort();
