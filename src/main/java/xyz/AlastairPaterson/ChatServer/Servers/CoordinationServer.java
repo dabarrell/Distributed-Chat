@@ -489,25 +489,25 @@ public class CoordinationServer {
      */
     private GlobalLockMessage processGlobalLockRequest(GlobalLockMessage globalLockMessage) {
         if (globalLockMessage.getNewServerId().equalsIgnoreCase(this.id)) {
+            GlobalReleaseMessage releaseMessage = new GlobalReleaseMessage(this.id, globalLockMessage.isApproved());
+
+            for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+                    .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+                    .collect(Collectors.toList())){
+
+                try {
+                    server.sendMessageWithoutReply(releaseMessage);
+                } catch (Exception e) {
+                    Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                }
+
+            }
+
             if (!globalLockMessage.isApproved()) {
                 Logger.error("This serverId already exists - shutting down");
                 System.exit(1);
             } else {
-                Logger.info("New serverId approved - sending global release");
-
-                GlobalReleaseMessage releaseMessage = new GlobalReleaseMessage(this.id);
-
-                for(CoordinationServer server : StateManager.getInstance().getServers().stream()
-                        .filter(x -> !x.getId().equalsIgnoreCase(this.id))
-                        .collect(Collectors.toList())){
-
-                    try {
-                        server.sendMessageWithoutReply(releaseMessage);
-                    } catch (Exception e) {
-                        Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
-                    }
-
-                }
+                Logger.info("New serverId approved - sent global release");
 
                 try {
                     Logger.debug("Attempting to begin and finish load");
@@ -566,13 +566,19 @@ public class CoordinationServer {
 
         Logger.debug("Lock removed for server {}", releaseMessage.getServerId());
 
-        CoordinationServer newServer = StateManager.getInstance().getServers().stream()
-                .filter(x -> x.getId().equals(releaseMessage.getServerId())).findFirst().get();
+        if (releaseMessage.isApproved()) {
+            Logger.debug("Starting new server {}", releaseMessage.getServerId());
 
-        try {
-            newServer.begin();
-        } catch (Exception e) {
-            Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+            CoordinationServer newServer = StateManager.getInstance().getServers().stream()
+                    .filter(x -> x.getId().equals(releaseMessage.getServerId())).findFirst().get();
+
+            try {
+                newServer.begin();
+            } catch (Exception e) {
+                Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+            }
+        } else {
+            Logger.debug("New server {} was disapproved", releaseMessage.getServerId());
         }
     }
 
