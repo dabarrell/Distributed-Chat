@@ -220,6 +220,7 @@ public class ClientConnection {
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
         } catch (Exception e) {
+            e.printStackTrace();
             Logger.error("IO exception occurred during cleanup - state may be invalid!");
         }
 
