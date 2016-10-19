@@ -9,6 +9,10 @@ import xyz.AlastairPaterson.ChatServer.Exceptions.IdentityInUseException;
 import xyz.AlastairPaterson.ChatServer.Messages.HelloMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityLockMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Identity.IdentityUnlockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalLockMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.GlobalReleaseMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.RequestRoomListMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.addRegisteredUser.AddRegisteredUserMessage;
 import xyz.AlastairPaterson.ChatServer.Messages.Message;
 import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
@@ -20,8 +24,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
  */
 public class CoordinationServer {
     private boolean connected = false;
+
+    private boolean localInstance = false;
 
     private final int coordinationPort;
 
@@ -47,8 +51,10 @@ public class CoordinationServer {
     private final Gson jsonSerializer = new Gson();
 
     private HeartbeatServer heartbeatServer;
-    
+
     private UserAdditionServer userAdditionServer;
+
+    private Boolean begun = false;
 
 
     /**
@@ -59,16 +65,22 @@ public class CoordinationServer {
      * @param coordinationPort The port for coordination operations
      * @param clientPort       The port for client operations
      * @param localInstance    If this is a locally running server
-     * @throws IOException Thrown if initialization fails for some reason
      */
-    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, boolean localInstance, int heartbeatPort, int userAdditionPort) throws Exception {
+    public CoordinationServer(String id, String hostname, int coordinationPort, int clientPort, int heartbeatPort, int userAdditionPort, boolean localInstance) {
         this.id = id;
         this.hostname = hostname;
         this.coordinationPort = coordinationPort;
         this.clientPort = clientPort;
         this.heartbeatPort = heartbeatPort;
         this.userAdditionPort = userAdditionPort;
+        this.localInstance = localInstance;
+    }
 
+    public void begin() throws Exception {
+        if (begun) {
+            Logger.warn("Already begun");
+            return;
+        }
         Thread workerThread;
 
         if (localInstance) {
@@ -76,7 +88,7 @@ public class CoordinationServer {
             workerThread = new Thread(this::runServer);
             workerThread.setName(id + "CoordinationListener");
             socket = SocketServices.buildServerSocket(this.coordinationPort);
-            Logger.info("Recieving co-ordination port is {}", this.coordinationPort);
+            Logger.info("Receiving co-ordination port is {}", this.coordinationPort);
             connected = true;
 
             //FIXME: Not sure if this is the right place to do this?
@@ -94,6 +106,32 @@ public class CoordinationServer {
         }
 
         workerThread.start();
+        begun = true;
+    }
+
+    public void finishLoad() throws Exception {
+        informServersOfMainHall();
+
+        new ClientListener(StateManager.getInstance().getThisCoordinationServer().getClientPort());
+
+        Logger.debug("All servers reached. Chat service now available");
+
+        Logger.debug("Finished config processing");
+    }
+
+    private void informServersOfMainHall() throws Exception {
+        String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
+        RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
+        RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);
+
+        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
+            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
+                continue;
+            }
+
+            coordinationServer.sendMessage(lockMessage);
+            coordinationServer.sendMessage(unlockMessage);
+        }
     }
 
     /**
@@ -137,6 +175,15 @@ public class CoordinationServer {
     }
 
     /**
+     * The coordination port of the server
+     *
+     * @return The coordination port
+     */
+    public int getCoordinationPort() {
+        return coordinationPort;
+    }
+
+    /**
      * The heartbeat listening port of the server
      *
      * @return The heartbeat port
@@ -144,6 +191,16 @@ public class CoordinationServer {
     public int getHeartbeatPort() {
         return heartbeatPort;
     }
+
+    /**
+     * The user addition port of the server
+     *
+     * @return The user addition port
+     */
+    public int getUserAdditionPort() {
+        return userAdditionPort;
+    }
+
 
     /**
      * Sends a message to the specified coordination server
@@ -236,6 +293,19 @@ public class CoordinationServer {
                 case "deleteroom":
                     processDeleteRoomRequest(jsonSerializer.fromJson(receivedData, RoomDelete.class));
                     break;
+                case "newServerRequest":
+                    processNewServerRequest(jsonSerializer.fromJson(receivedData, NewServerRequestMessage.class));
+                    break;
+                case "globallock":
+                    replyObject = processGlobalLockRequest(jsonSerializer.fromJson(receivedData, GlobalLockMessage.class));
+                    break;
+                case "globalrelease":
+                    processUnlockGlobalRequest(jsonSerializer.fromJson(receivedData, GlobalReleaseMessage.class));
+                    break;
+                case "requestrooms":
+                    processRoomListRequest(jsonSerializer.fromJson(receivedData, RequestRoomListMessage.class));
+                    break;
+
             }
 
             SocketServices.writeToSocket(client, jsonSerializer.toJson(replyObject));
@@ -257,14 +327,15 @@ public class CoordinationServer {
         try{
           for(CoordinationServer server : StateManager.getInstance().getServers().stream()
               .filter(x -> !x.getId().equalsIgnoreCase(this.id)).collect(Collectors.toList())){
-            //server.sendMessageWithoutReply(message);
+//            server.sendMessageWithoutReply(message);
+              // TODO: 19/10/16 Why is this not sent? Has this been moved to user addition server?
           }
         }catch( Exception e ){
           Logger.error(e);
         }
 
       }else{
-        Logger.info( "User {} is allready registered", message.getIdentity() );
+        Logger.info( "User {} is already registered", message.getIdentity() );
       }
     }
 
@@ -347,5 +418,219 @@ public class CoordinationServer {
      */
     private Object processHelloMessage() {
         return new HelloMessage();
+    }
+
+
+    /**
+     * Processes a newServerRequest message
+     *
+     * @param newServerRequestMessage The received message
+     */
+    private void processNewServerRequest(NewServerRequestMessage newServerRequestMessage) {
+        Logger.info("New server request received");
+
+        CoordinationServer newServer = new CoordinationServer(newServerRequestMessage.getServerId(),
+                newServerRequestMessage.getHost(),
+                newServerRequestMessage.getCoordPort(),
+                newServerRequestMessage.getClientPort(),
+                newServerRequestMessage.getHeartbeatPort(),
+                newServerRequestMessage.getUserAdditionPort(),
+                false);
+
+        GlobalLockMessage lockRequest = new GlobalLockMessage(this.id, newServer);
+
+        if (StateManager.getInstance().addServer(newServer)) {
+            // Add lock on server
+            StateManager.getInstance().addLock(newServer.getId(), newServer.getId(), LockType.ServerLock);
+
+            // Server didn't exist and was added
+            try{
+                boolean allServersApprove = true;
+
+                // Ask servers if the name is available
+                for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+                        .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+                        .filter(x -> !x.getId().equalsIgnoreCase(newServer.getId()))
+                        .collect(Collectors.toList())){
+                    GlobalLockMessage response = jsonSerializer.fromJson(server.sendMessage(lockRequest), GlobalLockMessage.class);
+                    if (!response.isApproved()) {
+                        allServersApprove = false;
+                        break;
+                    }
+                }
+
+                lockRequest.setApproved(allServersApprove);
+                newServer.sendMessageWithoutReply(lockRequest);
+
+
+            }catch( Exception e ){
+                Logger.error(e);
+            }
+
+        }else{
+            Logger.info( "Server {} is already registered", newServerRequestMessage.getServerId() );
+            lockRequest.setApproved(false);
+            try {
+                newServer.sendMessage(lockRequest);
+            } catch (Exception e) {
+                Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+            }
+        }
+    }
+
+    /**
+     * Processes a global lock message
+     *
+     * @param globalLockMessage Incoming lock request
+     * @return Updated lock request, or null if this is the server in question
+     */
+    private GlobalLockMessage processGlobalLockRequest(GlobalLockMessage globalLockMessage) {
+        if (globalLockMessage.getNewServerId().equalsIgnoreCase(this.id)) {
+            if (!globalLockMessage.isApproved()) {
+                Logger.error("This serverId already exists - shutting down");
+                System.exit(1);
+            } else {
+                Logger.info("New serverId approved - sending global release");
+
+                GlobalReleaseMessage releaseMessage = new GlobalReleaseMessage(this.id);
+
+                for(CoordinationServer server : StateManager.getInstance().getServers().stream()
+                        .filter(x -> !x.getId().equalsIgnoreCase(this.id))
+                        .collect(Collectors.toList())){
+
+                    try {
+                        server.sendMessageWithoutReply(releaseMessage);
+                    } catch (Exception e) {
+                        Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                    }
+
+                }
+
+                try {
+                    Logger.debug("Attempting to begin and finish load");
+                    begin();
+                    finishLoad();
+                    requestRooms();
+                } catch (Exception e) {
+                    Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                }
+
+            }
+
+            return null;
+
+        } else if (!globalLockMessage.getServerId().equalsIgnoreCase(this.id)) {
+            // This server is receiving a lock request
+            CoordinationServer newServer = new CoordinationServer(globalLockMessage.getNewServerId(),
+                    globalLockMessage.getHost(),
+                    globalLockMessage.getCoordPort(),
+                    globalLockMessage.getClientPort(),
+                    globalLockMessage.getHeartbeatPort(),
+                    globalLockMessage.getUserAdditionPort(),
+                    false);
+
+            if (StateManager.getInstance().addServer(newServer)) {
+                // Server didn't already exist, was added
+
+                // Add lock on server
+                StateManager.getInstance().addLock(newServer.getId(), newServer.getId(), LockType.ServerLock);
+
+                Logger.info("Server {} added and locked", newServer.getId());
+
+                globalLockMessage.setApproved(true);
+            } else {
+                Logger.info("Server {} already exists - lock denied", newServer.getId());
+                globalLockMessage.setApproved(false);
+            }
+
+            return globalLockMessage;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Processes a global release message
+     *
+     * @param releaseMessage Incoming release
+     */
+    private void processUnlockGlobalRequest(GlobalReleaseMessage releaseMessage) {
+        // Remove lock
+        StateManager.getInstance().removeLock(new EntityLock(releaseMessage.getServerId(),
+                releaseMessage.getServerId(),
+                LockType.ServerLock));
+
+        Logger.debug("Lock removed for server {}", releaseMessage.getServerId());
+
+        CoordinationServer newServer = StateManager.getInstance().getServers().stream()
+                .filter(x -> x.getId().equals(releaseMessage.getServerId())).findFirst().get();
+
+        try {
+            newServer.begin();
+        } catch (Exception e) {
+            Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+        }
+    }
+
+    private void requestRooms() throws Exception {
+        RequestRoomListMessage message = new RequestRoomListMessage(this.id);
+
+        CoordinationServer server = StateManager.getInstance().getServers().stream()
+                .filter(x -> !x.getId().equalsIgnoreCase(StateManager.getInstance().getThisServerId()))
+                .findFirst()
+                .get();
+
+        server.sendMessageWithoutReply(message);
+    }
+
+    private void processRoomListRequest(RequestRoomListMessage message) {
+        if (message.getRoomId() == null) {
+            Logger.debug("Room list request received");
+
+            CoordinationServer server = StateManager.getInstance().getServers().stream()
+                    .filter(x -> x.getId().equalsIgnoreCase(message.getServerId()))
+                    .findFirst()
+                    .get();
+
+            for (ChatRoom room : StateManager.getInstance().getRooms().stream()
+                    .filter(x -> !x.getOwnerServer().getId().equalsIgnoreCase(server.getId()))
+                    .collect(Collectors.toList())) {
+
+                RequestRoomListMessage response = new RequestRoomListMessage(this.id, room.getRoomId(), room.getOwnerServer().getId());
+
+                try {
+                    server.sendMessageWithoutReply(response);
+                } catch (Exception e) {
+                    Logger.error("Unexpected exception {} {}", e.getMessage(), e.getStackTrace());
+                }
+            }
+
+        } else if (!message.getHostServerId().equalsIgnoreCase(this.getId())) {
+            CoordinationServer owningServer = StateManager.getInstance().getServers()
+                    .stream()
+                    .filter(x -> x.getId().equalsIgnoreCase(message.getHostServerId()))
+                    .findFirst()
+                    .get();
+
+            StateManager.getInstance().getRooms().add(new ChatRoom(message.getRoomId(), owningServer));
+
+            Logger.debug("New room added: {} on {}", message.getRoomId(), message.getHostServerId());
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CoordinationServer that = (CoordinationServer) o;
+
+        return id.equals(that.id);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }

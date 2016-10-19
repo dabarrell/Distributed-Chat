@@ -10,11 +10,9 @@ import org.pmw.tinylog.Level;
 import org.pmw.tinylog.Logger;
 import org.apache.commons.csv.*;
 import java.nio.charset.Charset;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomCreateLockMessage;
-import xyz.AlastairPaterson.ChatServer.Messages.Room.Lifecycle.RoomReleaseLockMessage;
-import xyz.AlastairPaterson.ChatServer.Servers.ClientListener;
+
+import xyz.AlastairPaterson.ChatServer.Messages.NewServer.NewServerRequestMessage;
 import xyz.AlastairPaterson.ChatServer.Servers.CoordinationServer;
-import xyz.AlastairPaterson.ChatServer.Servers.UserAdditionServer;
 
 import javax.naming.ConfigurationException;
 import java.io.*;
@@ -31,7 +29,6 @@ public class Main {
     public static void main(String[] args) {
         ArgumentParser parser = configureArgumentParser();
         parseRegisteredUsers();
-
 
         Namespace arguments = null;
         try {
@@ -51,7 +48,7 @@ public class Main {
         configureSSL();
 
         try {
-            processServers(readConfiguration(arguments.get("l")));
+            processServers(readConfiguration(arguments.get("l")), arguments.getBoolean("add"));
         } catch (Exception ex) {
             Logger.error(ex.getMessage());
             System.exit(1);
@@ -95,6 +92,11 @@ public class Main {
                 .action(Arguments.storeTrue())
                 .help("enables verbose (debugging) output");
 
+        parser.addArgument("-a", "--add")
+                .required(false)
+                .action(Arguments.storeTrue())
+                .help("starts server as an addition to system");
+
         parser.addArgument("-n", "--name")
                 .required(true)
                 .type(String.class)
@@ -132,14 +134,15 @@ public class Main {
         return returnArray;
     }
 
+
+
     /**
      * Processes configuration to learn about other servers
      *
      * @param configurationLines A list of tab delimited configuration options
      */
-    private static void processServers(List<String> configurationLines) throws Exception {
+    private static void processServers(List<String> configurationLines, Boolean additional) throws Exception {
         Logger.debug("Beginning config processing");
-        int localPort = 0;
 
         for (String currentLine : configurationLines) {
             Logger.debug("Adding config: {}", currentLine);
@@ -157,41 +160,44 @@ public class Main {
                     serverAddress,
                     coordinationPort,
                     clientPort,
-                    isLocalServer,
                     heartbeatPort,
-                    userAdditionPort);
-
-            localPort += isLocalServer ? clientPort : 0;
+                    userAdditionPort,
+                    isLocalServer);
 
             // Add our found coordination server
-            StateManager.getInstance().addServer(currentServer);
+            if (StateManager.getInstance().addServer(currentServer)) {
+                currentServer.begin();
+            }
         }
+
         Logger.debug("Config loaded, validating connectivity");
 
         validateConnectivity();
 
-        informServersOfMainHall();
+        if (additional) {
+            processAdditional();
+        } else {
+            StateManager.getInstance().getThisCoordinationServer().finishLoad();
+        }
 
-        new ClientListener(localPort);
-
-        Logger.debug("All servers reached. Chat service now available");
-
-        Logger.debug("Finished config processing");
     }
 
-    private static void informServersOfMainHall() throws Exception {
-        String mainHallId = StateManager.getInstance().getMainhall().getRoomId();
-        RoomCreateLockMessage lockMessage = new RoomCreateLockMessage(mainHallId, "");
-        RoomReleaseLockMessage unlockMessage = new RoomReleaseLockMessage(StateManager.getInstance().getThisServerId(),mainHallId, true);
+    private static void processAdditional() throws Exception {
+        String serverId = StateManager.getInstance().getThisServerId();
+        String hostname = StateManager.getInstance().getThisCoordinationServer().getHostname();
+        int coordPort = StateManager.getInstance().getThisCoordinationServer().getCoordinationPort();
+        int clientPort = StateManager.getInstance().getThisCoordinationServer().getClientPort();
+        int heartbeatPort = StateManager.getInstance().getThisCoordinationServer().getHeartbeatPort();
+        int userAdditionPort = StateManager.getInstance().getThisCoordinationServer().getUserAdditionPort();
 
-        for (CoordinationServer coordinationServer : StateManager.getInstance().getServers()) {
-            if (coordinationServer.equals(StateManager.getInstance().getThisCoordinationServer())) {
-                continue;
-            }
+        NewServerRequestMessage newServerRequestMessage = new NewServerRequestMessage(serverId, hostname, coordPort, clientPort, heartbeatPort, userAdditionPort);
 
-            coordinationServer.sendMessage(lockMessage);
-            coordinationServer.sendMessage(unlockMessage);
-        }
+        CoordinationServer server = StateManager.getInstance().getServers().stream()
+                .filter(x -> !x.getId().equalsIgnoreCase(StateManager.getInstance().getThisServerId()))
+                .findFirst()
+                .get();
+
+        server.sendMessage(newServerRequestMessage);
     }
 
     /**
@@ -211,11 +217,12 @@ public class Main {
             Logger.warn(sb.toString());
             Thread.sleep(3000);
         }
+        
         StateManager.getInstance().getThisCoordinationServer().startHeartbeatServer();
     }
 
     /**
-     * Parses the registed users
+     * Parses the registered users
      */
     private static void parseRegisteredUsers() {
 
