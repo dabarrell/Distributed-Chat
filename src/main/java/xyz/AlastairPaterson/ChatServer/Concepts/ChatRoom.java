@@ -119,6 +119,16 @@ public class ChatRoom {
         this.leave(identity, null);
     }
 
+    public void leave(Identity identity, boolean forceful) {
+        if (forceful) {
+            try {
+                this.leave(identity, null);
+            } catch (Exception e) {
+                Logger.debug("Ignoring exception in client leave");
+            }
+        }
+    }
+
     public void leave(Identity identity, ChatRoom destination) throws Exception {
 
         if (this.getOwnerId().equalsIgnoreCase(identity.getScreenName())) {
@@ -127,7 +137,7 @@ public class ChatRoom {
         else {
             RoomChangeClientResponse roomChange = new RoomChangeClientResponse(identity, this, destination);
 
-            this.broadcast(roomChange, identity);
+            this.broadcast(roomChange);
         }
 
         this.getMembers().remove(identity);

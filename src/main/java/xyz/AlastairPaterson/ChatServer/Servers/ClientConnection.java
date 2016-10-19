@@ -215,7 +215,7 @@ public class ClientConnection {
         try {
             this.identity.getCurrentRoom().leave(this.identity);
             if (this.identity.getCurrentRoom() != null) {
-                this.identity.getCurrentRoom().leave(this.identity);
+                this.identity.getCurrentRoom().leave(this.identity, true);
             }
 
             StateManager.getInstance().getHostedIdentities().remove(this.identity);
