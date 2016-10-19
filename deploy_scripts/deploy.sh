@@ -89,4 +89,4 @@ git checkout server_addition_debug
 # execute server
 killall java
 echo "Running with $2 and $3"
-nohup ./run_deamon.sh "$2" "$3"
+nohup ./run_deamon.sh "$2" "$3" "$4"
