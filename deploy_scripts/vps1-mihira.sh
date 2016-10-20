@@ -1,4 +1,4 @@
 #!/bin/bash
 
-echo "Setting up 115.146.95.8"
-ssh -t ubuntu@115.146.95.8 "bash -s $1 mihiraNectar $2 root" < deploy.sh
+echo "Setting up 43.240.99.124"
+ssh -t ubuntu@43.240.99.124 "bash -s $1 s1 $2 root" < deploy.sh
