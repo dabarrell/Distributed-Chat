@@ -1,2 +1,6 @@
 test,brunswick
 mihira,password
+adel,password
+maria,password
+maria2,password
+chenhao,password
